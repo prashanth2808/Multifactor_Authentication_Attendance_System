@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multifactor Authentication Attendance System</title>
+    <!-- Simple Flask frontend without SocketIO -->
+    <style>
+        /* Professional Enterprise CSS - Light Theme */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border-bottom: 2px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1rem 2rem;
+            text-align: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Logo */
+        .logo {
+            height: 50px;
+            width: auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .header h1 {
+            color: #0f172a;
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            flex: 1;
+            text-align: center;
+            margin: 0;
+        }
+
+        /* Admin Button */
+        .admin-button {
+            position: relative;
+            top: auto;
+            right: auto;
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(255, 106, 0, 0.2);
+        }
+
+        .admin-button:hover {
+            background: linear-gradient(135deg, #CC5500 0%, #AA4400 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 106, 0, 0.3);
+        }
+
+        /* Main Container */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            height: calc(100vh - 80px);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Video Feed Section */
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .video-header::before {
+            content: "📹";
+            font-size: 16px;
+        }
+
+        .video-container {
+            position: relative;
+            flex: 1;
+            background: #000000;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        /* Live Status Display */
+        .status-banner {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-banner.waiting {
+            background: rgba(100, 116, 139, 0.9);
+        }
+
+        .status-banner.scanning {
+            background: rgba(59, 130, 246, 0.9);
+        }
+
+        .status-banner.recognized {
+            background: rgba(255, 106, 0, 0.9);
+        }
+
+        .status-banner.spoof {
+            background: rgba(220, 38, 38, 0.9);
+        }
+
+        .status-banner.unknown {
+            background: rgba(217, 119, 6, 0.9);
+        }
+
+        /* Face Positioning Guide */
+        .face-guide-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .face-guide-box {
+            width: 280px;
+            height: 320px;
+            position: relative;
+            border: 3px solid #00ff88;
+            border-radius: 12px;
+            background: transparent;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        /* Guide text */
+        .face-guide-text {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ff88;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Animated glow effect */
+        .face-guide-box {
+            animation: guideGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes guideGlow {
+            0% {
+                border-color: #00ff88;
+                box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            }
+            100% {
+                border-color: #00dd77;
+                box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+            }
+        }
+
+        /* Hide guide when face is detected */
+        .face-guide-overlay.hidden {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* System Status Panel */
+        .status-panel {
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .status-panel-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-panel-header::before {
+            content: "⚡";
+            font-size: 16px;
+        }
+
+        .status-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .status-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .status-item-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .status-item-content {
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        .status-item.success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .status-item.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .status-item.warning {
+            background: #fffbeb;
+            border-color: #fed7aa;
+        }
+
+        .status-item.info {
+            background: #eff6ff;
+            border-color: #dbeafe;
+        }
+
+        /* User Info Display - .user-info.show removed as unused */
+        .user-info {
+            display: none;
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-email {
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+
+        /* Confidence Meters */
+        .confidence-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .confidence-item {
+            text-align: center;
+        }
+
+        .confidence-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .confidence-fill.high {
+            background: #FF6A00;
+        }
+
+        .confidence-fill.medium {
+            background: #d97706;
+        }
+
+        .confidence-fill.low {
+            background: #dc2626;
+        }
+
+        /* Voice Options in Status Panel */
+        .voice-options {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .voice-prompt-text {
+            margin-bottom: 1rem;
+            color: #0c4a6e;
+            font-size: 1rem;
+        }
+        
+        .voice-buttons-inline {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-voice-verify {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+        
+        .btn-voice-verify:hover {
+            background: linear-gradient(135deg, #E65A00 0%, #CC5500 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-voice-skip {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+        
+        .btn-voice-skip:hover {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Voice Verification Modal */
+        .voice-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .voice-modal.show {
+            display: flex;
+        }
+
+        .voice-content {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 2px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .voice-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+
+        .voice-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: 2px solid #3b82f6;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: #475569;
+            border: 2px solid #cbd5e1;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        /* Session Result Display */
+        .session-result {
+            display: none;
+            border-left: 4px solid #FF6A00;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15);
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .session-result.success {
+            border-left-color: #059669;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .session-result.error {
+            border-left-color: #dc2626;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .session-result.show {
+            display: block;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        .result-header {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #059669;
+            padding: 8px 0;
+        }
+
+        .session-result.error .result-header {
+            color: #dc2626;
+        }
+
+        .result-details {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            color: #374151;
+            text-align: center;
+        }
+
+        .timestamp {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-style: italic;
+            text-align: center;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        /* Animations - pulse removed as unused */
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                padding: 16px;
+            }
+            
+            .video-container {
+                min-height: 300px;
+            }
+            
+            .status-panel {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                gap: 12px;
+                padding: 12px;
+            }
+            
+            .video-container {
+                min-height: 250px;
+            }
+            
+            .status-content {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <img src="/static/images/reva logo.png" alt="Reva Logo" class="logo" onclick="window.location.reload()">
+        <h1>Multifactor Authentication Attendance System</h1>
+        <button class="admin-button" onclick="showAdminLogin()">
+            👤 Admin
+        </button>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Video Feed Section -->
+        <div class="video-section">
+            <div class="video-container">
+                <video id="video" autoplay muted></video>
+                
+                <!-- Face Positioning Guide -->
+                <div id="faceGuideOverlay" class="face-guide-overlay">
+                    <div class="face-guide-box">
+                        <div class="face-guide-text">Position your face within the box</div>
+                    </div>
+                </div>
+                
+                <!-- Status Banner -->
+                <div id="statusBanner" class="status-banner waiting">
+                    <div id="statusMessage">System ready - looking for faces...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status Panel -->
+        <div class="status-panel">
+            <div class="status-panel-header">
+                System Status
+            </div>
+            <div class="status-content">
+                <!-- Current System Status -->
+                <div class="status-item" id="currentStatusItem">
+                    <div class="status-item-header">Current Status</div>
+                    <div class="status-item-content" id="statusText">Ready to scan for users</div>
+                </div>
+                
+                <!-- User Information -->
+                <div class="status-item user-info" id="userInfoItem" style="display: none;">
+                    <div class="status-item-header">Detected User</div>
+                    <div class="status-item-content">
+                        <div class="user-name" id="userName"></div>
+                        <div class="user-email" id="userEmail"></div>
+                    </div>
+                </div>
+
+                <!-- Hidden elements for JavaScript compatibility (Authentication Scores removed from UI) -->
+                <div id="confidenceItem" style="display: none;"></div>
+                <div id="faceConfidence" style="display: none;"></div>
+                <div id="spoofConfidence" style="display: none;"></div>
+                <div id="voiceConfidence" style="display: none;"></div>
+                <div id="faceConfidenceBar" style="display: none;"></div>
+                <div id="spoofConfidenceBar" style="display: none;"></div>
+                <div id="voiceConfidenceBar" style="display: none;"></div>
+                
+                <!-- Voice Verification Options -->
+                <div class="status-item info" id="voiceOptionsItem" style="display: none;">
+                    <div class="status-item-header">Voice Authentication</div>
+                    <div class="status-item-content">
+                        <div id="voicePromptText">
+                            <strong>Face Verified!</strong> Choose authentication method:
+                        </div>
+                        <div class="voice-buttons-inline" style="margin-top: 8px;">
+                            <button class="btn btn-voice-verify" id="verifyVoiceBtn">
+                                Verify Voice
+                            </button>
+                            <button class="btn btn-voice-skip" id="skipVoiceBtn">
+                                Skip Voice
+                            </button>
+                        </div>
+                        <div id="voiceRecordingStatus" style="display:none; margin-top: 8px; color: #059669; font-weight: 500;">
+                            Recording voice... Speak clearly for 5 seconds
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Result -->
+                <div class="status-item session-result" id="sessionResultItem" style="display: none;">
+                    <div class="status-item-header">Session Result</div>
+                    <div class="status-item-content">
+                        <div class="result-header" id="resultTitle">Session Complete</div>
+                        <div class="result-details" id="resultDetails"></div>
+                        <div class="timestamp" id="resultTimestamp"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Verification Modal -->
+    <div id="voiceModal" class="voice-modal">
+        <div class="voice-content">
+            <div class="voice-title">Voice Verification</div>
+            <div id="voicePromptText">
+                Hello <span id="voiceUserName"></span><br>
+                Face verified - Choose verification method
+            </div>
+            
+            <div class="voice-buttons">
+                <button class="btn btn-primary" id="verifyVoiceBtn">
+                    🎤 Verify Voice (V)
+                </button>
+                <button class="btn btn-secondary" id="skipVoiceBtn">
+                    ⏭️ Skip Voice (N)
+                </button>
+            </div>
+
+            <div id="voiceRecordingStatus" style="display:none; margin-top:1rem;">
+                <div style="font-weight: 600; color: #059669;">Recording voice...</div>
+                <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">
+                    Speak clearly for 5 seconds
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span style="color: #059669; font-weight: 600;">Fully Automatic</span> • 
+        Just look at camera • Speak when asked • Press ESC anytime to stop system
+    </footer>
+
+    <script>
+        // Global variables  
+        let video;
+        let isProcessing = false;
+        let frameCount = 0;
+        let currentUser = null;
+        let isRecordingVoice = false;
+        let sessionActive = false;
+        let frameProcessingInterval = null;
+
+        // Initialize system
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem();
+            setupEventListeners();
+            startCameraStream();
+            
+            // Start status polling and auto-start session
+            pollSessionStatus();
+            setTimeout(() => {
+                startBiometricSession();
+            }, 2000);
+        });
+
+        function initializeSystem() {
+            // Simple Flask initialization (no SocketIO needed)
+            console.log('🚀 BIOMETRIC KIOSK WEB SYSTEM STARTED');
+            console.log('🔗 Same AI models and logic as CLI session.py');
+            console.log('📋 Fully Automatic • Just look at camera • Speak when asked');
+            
+            updateStatus('ready', '🚀 BIOMETRIC KIOSK WEB SYSTEM STARTED\nLoading AI models...');
+        }
+
+        // Simple status polling (no complex SocketIO events needed)
+        function pollSessionStatus() {
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/system-status');
+                    if (response.ok) {
+                        const status = await response.json();
+                        // Update UI based on current session status
+                        updateSystemStatus(status);
+                    }
+                } catch (error) {
+                    console.log('Status polling error:', error);
+                }
+            }, 1000); // Poll every second
+        }
+
+        function updateSystemStatus(status) {
+            // Simple status updates based on backend state
+            if (status.current_session && status.current_session.status) {
+                const sessionStatus = status.current_session.status;
+                const message = status.current_session.message || '';
+                
+                switch(sessionStatus) {
+                    case 'waiting':
+                        updateStatus('waiting', 'Waiting for face...');
+                        controlFaceGuide('waiting');
+                        break;
+                    case 'face_matched':
+                        if (status.current_session.user_data) {
+                            showUserInfo(status.current_session.user_data, status.current_session.spoof_score);
+                            updateStatus('recognized', 'Face recognized!');
+                            controlFaceGuide('recognized');
+                        }
+                        break;
+                    case 'voice_prompt':
+                        if (status.current_session.user_data) {
+                            showVoiceOptions(status.current_session.user_data);
+                        }
+                        break;
+                }
+                
+            }
+        }
+
+        function setupEventListeners() {
+            // Keyboard shortcuts (matches session.py)
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    // ESC to stop system (matches session.py)
+                    if (confirm('Stop the biometric system?')) {
+                        window.close();
+                    }
+                }
+                
+                // Voice shortcuts (V/N) when voice options are visible
+                if (document.getElementById('voiceOptionsItem').style.display !== 'none') {
+                    if (event.key === 'v' || event.key === 'V') {
+                        startVoiceVerification();
+                    }
+                    if (event.key === 'n' || event.key === 'N') {
+                        skipVoiceVerification();
+                    }
+                }
+            });
+
+            // Voice modal buttons
+            document.getElementById('verifyVoiceBtn').addEventListener('click', startVoiceVerification);
+            document.getElementById('skipVoiceBtn').addEventListener('click', skipVoiceVerification);
+        }
+
+        // Start biometric session (matches session.py run_single_session)
+        async function startBiometricSession() {
+            try {
+                console.log('\n' + '='.repeat(50));
+                console.log('🚀 STARTING BIOMETRIC SESSION');
+                console.log('='.repeat(50));
+                
+                // Reset session state
+                sessionActive = false;
+                frameCount = 0;
+                currentUser = null;
+                
+                // Call backend to start session
+                const response = await fetch('/api/run-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Session start failed: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Session initialized - ' + result.message);
+                
+                // Start frame processing immediately (like session.py)
+                sessionActive = true;
+                updateStatus('waiting', 'Look at camera...');
+                startFrameProcessing();
+                
+            } catch (error) {
+                console.error('❌ Session start error:', error);
+                updateStatus('error', 'Session start failed - retrying...');
+                
+                // Auto-retry session start
+                setTimeout(() => {
+                    startBiometricSession();
+                }, 5000);
+            }
+        }
+
+        async function startCameraStream() {
+            try {
+                video = document.getElementById('video');
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                });
+
+                video.srcObject = stream;
+                
+                console.log('📹 Camera stream started');
+                updateStatus('ready', 'Camera ready - starting biometric session...');
+                
+            } catch (error) {
+                console.error('❌ Camera access error:', error);
+                updateStatus('error', 'Cannot access camera. Please check permissions.');
+            }
+        }
+
+        function startFrameProcessing() {
+            if (frameProcessingInterval) {
+                clearInterval(frameProcessingInterval);
+            }
+            
+            console.log('📹 Starting frame processing loop (session.py style)');
+            
+            // Frame processing interval (matches session.py continuous while loop)
+            frameProcessingInterval = setInterval(async () => {
+                if (!isProcessing && sessionActive && video && video.readyState === 4) {
+                    await processFrame();
+                }
+            }, 100); // 100ms interval for responsiveness
+        }
+
+        function stopFrameProcessing() {
+            if (frameProcessingInterval) {
+                clearInterval(frameProcessingInterval);
+                frameProcessingInterval = null;
+                console.log('🛑 Frame processing stopped');
+            }
+            sessionActive = false;
+        }
+
+        async function processFrame() {
+            if (isProcessing || !sessionActive || document.getElementById('voiceModal').classList.contains('show')) {
+                return;
+            }
+            
+            isProcessing = true;
+            
+            try {
+                // Capture frame from video (matches session.py frame capture)
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to base64 for backend processing
+                const frameData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Send frame to backend (replicates session.py frame processing pipeline)
+                const response = await fetch('/api/process-frame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ frame: frameData })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Backend API error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Update frame count if available
+                if (result.frame_count !== undefined) {
+                    updateFrameCount(result.frame_count);
+                }
+
+                // Handle different frame processing results (like session.py conditions)
+                switch(result.status) {
+                    case 'frame_skipped':
+                        // Frame skipped (matches session.py frame_skip logic)
+                        // No action needed, just continue
+                        break;
+                        
+                    case 'max_attempts_reached':
+                        // Max attempts reached (matches session.py CONFIG.max_attempts)
+                        console.log(`⏰ Frame limit reached: ${result.frame_count}/300`);
+                        updateStatus('warning', 'Max attempts reached - restarting...');
+                        stopFrameProcessing();
+                        setTimeout(() => {
+                            resetInterface();
+                            startBiometricSession();
+                        }, 3000);
+                        break;
+                        
+                    case 'face_recognized':
+                        // Face matched! (matches session.py face_matched = True)
+                        console.log(`🎯 Face matched! Breaking frame loop`);
+                        stopFrameProcessing();
+                        
+                        // Show user info and trigger voice prompt
+                        if (result.user_data) {
+                            showUserInfo(result.user_data, result.spoof_score);
+                            // FIX: Ensure user_data has name and email before displaying
+                            const userName = result.user_data.name || 'Unknown User';
+                            const userEmail = result.user_data.email || 'No Email';
+                            updateStatus('recognized', `FACE RECOGNIZED!\n${userName}\n${userEmail}`);
+                            controlFaceGuide('recognized');
+                            
+                            // Trigger voice prompt after short delay
+                            setTimeout(() => {
+                                showVoicePrompt(result.user_data);
+                            }, 1000);
+                        }
+                        break;
+                        
+                    case 'waiting_for_face':
+                        updateStatus('waiting', 'Waiting for face...');
+                        controlFaceGuide('waiting');
+                        break;
+                        
+                    case 'spoof_detected':
+                        updateStatus('spoof', 'SPOOF DETECTED\nPhone/Photo Blocked');
+                        if (result.spoof_score !== undefined) {
+                            updateSpoofConfidence(result.spoof_score);
+                        }
+                        break;
+                        
+                    case 'unknown_user':
+                        updateStatus('unknown', result.message || 'Unknown user');
+                        if (result.spoof_score !== undefined) {
+                            updateSpoofConfidence(result.spoof_score);
+                        }
+                        break;
+                        
+                    case 'processing_error':
+                        console.log('❌ Backend processing error');
+                        updateStatus('error', 'Processing error - retrying...');
+                        break;
+                        
+                    default:
+                        // Continue frame processing loop
+                        break;
+                }
+                
+            } catch (error) {
+                console.error('❌ Frame processing error:', error);
+                
+                // Error handling like session.py exception handling
+                sessionActive = false;
+                updateStatus('error', 'Connection to biometric server failed');
+                
+                // Auto-retry connection (matches session.py error recovery)
+                setTimeout(() => {
+                    console.log('🔄 Retrying biometric session...');
+                    startBiometricSession();
+                }, 5000);
+                
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        function updateStatus(type, message) {
+            const banner = document.getElementById('statusBanner');
+            const messageEl = document.getElementById('statusMessage');
+            const statusText = document.getElementById('statusText');
+            const currentStatusItem = document.getElementById('currentStatusItem');
+            
+            // Update status banner
+            banner.className = `status-banner ${type}`;
+            messageEl.innerHTML = message.replace(/\n/g, '<br>');
+            
+            // Update status item
+            statusText.innerHTML = message.replace(/\n/g, '<br>');
+            currentStatusItem.className = `status-item ${type === 'spoof' ? 'error' : type === 'recognized' ? 'success' : type === 'unknown' ? 'warning' : ''}`;
+        }
+
+        function updateFrameCount(count) {
+            frameCount = count;
+            // Frame counter removed from UI
+        }
+
+        function showUserInfo(userData, spoofScore) {
+            currentUser = userData;
+            // Store spoof score in currentUser for later use
+            currentUser.spoof_score = spoofScore;
+            
+            // Show user info item
+            const userInfoItem = document.getElementById('userInfoItem');
+            const confidenceItem = document.getElementById('confidenceItem');
+            userInfoItem.style.display = 'block';
+            confidenceItem.style.display = 'block';
+            
+            // Update user details
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userEmail').textContent = userData.email;
+            
+            // Update confidence meters
+            updateFaceConfidence(userData.confidence);
+            updateSpoofConfidence(spoofScore);
+        }
+
+        function updateFaceConfidence(confidence) {
+            const value = Math.round(confidence * 100);
+            document.getElementById('faceConfidence').textContent = `${value}%`;
+            
+            const bar = document.getElementById('faceConfidenceBar');
+            bar.style.width = `${value}%`;
+            bar.className = `confidence-fill ${value > 80 ? 'high' : value > 60 ? 'medium' : 'low'}`;
+        }
+
+        function updateSpoofConfidence(score) {
+            const value = Math.round(score * 100);
+            document.getElementById('spoofConfidence').textContent = `${value}%`;
+            
+            const bar = document.getElementById('spoofConfidenceBar');
+            bar.style.width = `${value}%`;
+            bar.className = `confidence-fill ${value > 70 ? 'high' : 'low'}`;
+        }
+
+        function updateVoiceConfidence(score) {
+            const value = Math.round(score * 100);
+            document.getElementById('voiceConfidence').textContent = `${value}%`;
+            
+            const bar = document.getElementById('voiceConfidenceBar');
+            bar.style.width = `${value}%`;
+            bar.className = `confidence-fill ${value > 80 ? 'high' : value > 60 ? 'medium' : 'low'}`;
+        }
+
+        function showVoiceOptions(userData) {
+            // Show voice options item
+            const voiceOptionsItem = document.getElementById('voiceOptionsItem');
+            const voicePromptText = document.getElementById('voicePromptText');
+            
+            voicePromptText.innerHTML = `<strong>Hello ${userData.name}!</strong><br>Face verified (${(userData.confidence * 100).toFixed(1)}%) - Choose authentication method:`;
+            voiceOptionsItem.style.display = 'block';
+            
+            console.log(`Hello ${userData.name} — Face verified (${(userData.confidence * 100).toFixed(1)}%)`);
+            console.log('Press V to verify voice • N to skip');
+        }
+
+        async function startVoiceVerification() {
+            if (isRecordingVoice) return;
+            
+            try {
+                // Show recording status immediately
+                document.getElementById('voiceRecordingStatus').style.display = 'block';
+                document.getElementById('verifyVoiceBtn').disabled = true;
+                document.getElementById('skipVoiceBtn').disabled = true;
+                isRecordingVoice = true;
+                
+                console.log('🎤 Starting voice verification - SPEAK NOW!');
+                updateStatus('scanning', 'RECORDING VOICE - Speak clearly for 5 seconds...');
+                
+                // Start backend recording IMMEDIATELY (like CLI)
+                const startResponse = await fetch('/api/start-voice-verification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!startResponse.ok) {
+                    throw new Error('Failed to start voice verification');
+                }
+                
+                console.log('🔴 Backend recording started - listening now!');
+                
+                // Poll for result every 200ms (real-time feedback)
+                let attempts = 0;
+                const maxAttempts = 50; // 10 seconds max (50 * 200ms) - Allow time for 5s recording + 3s processing
+                
+                const pollResult = async () => {
+                    try {
+                        const resultResponse = await fetch('/api/voice-result');
+                        
+                        if (resultResponse.ok) {
+                            const result = await resultResponse.json();
+                            
+                            if (result.status === 'recording') {
+                                // Still recording - show progress
+                                attempts++;
+                                const progress = Math.min((attempts / 25) * 100, 100); // 5 seconds = 25 polls
+                                const remainingTime = Math.max(0, Math.ceil(10 - (attempts * 0.2))); // 10s timeout
+                                updateStatus('scanning', `RECORDING VOICE - ${Math.ceil(5 - (attempts * 0.2))}s remaining...`);
+                                
+                                if (attempts < maxAttempts) {
+                                    setTimeout(pollResult, 200);
+                                } else {
+                                    // Timeout
+                                    console.log('⏰ Voice recording timeout');
+                                    resetVoiceModal();
+                                    updateStatus('waiting', 'Voice verification timeout - try again');
+                                }
+                                return;
+                            }
+                            
+                            // Recording complete - process result
+                            console.log('🎯 Voice result received:', result);
+                            
+                            if (result.voice_verified) {
+                                // Voice verified
+                                console.log('✅ Voice verified - proceeding to session...');
+                                updateStatus('recognized', `VOICE VERIFIED! (${(result.voice_score * 100).toFixed(1)}%)`);
+                                updateVoiceConfidence(result.voice_score);
+                                
+                                // Mark session
+                                setTimeout(async () => {
+                                    await markSession();
+                                }, 1000);
+                                
+                            } else {
+                                // Voice failed
+                                console.log('❌ Voice verification failed');
+                                updateStatus('spoof', result.message || 'Voice verification failed');
+                                alert(`Voice verification failed: ${result.message}`);
+                                resetVoiceModal();
+                            }
+                        }
+                        
+                    } catch (pollError) {
+                        console.error('❌ Voice polling error:', pollError);
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            setTimeout(pollResult, 200);
+                        } else {
+                            resetVoiceModal();
+                            updateStatus('waiting', 'Voice verification error - try again');
+                        }
+                    }
+                };
+                
+                // Start polling immediately
+                setTimeout(pollResult, 200);
+                
+            } catch (error) {
+                console.error('❌ Voice verification error:', error);
+                alert('Cannot start voice verification. Please check microphone permissions.');
+                resetVoiceModal();
+                updateStatus('waiting', 'Voice verification failed - check microphone');
+            }
+        }
+
+        async function skipVoiceVerification() {
+            console.log('Voice verification skipped by user');
+            
+            try {
+                // Skip voice and proceed to session marking
+                const response = await fetch('/api/skip-voice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Voice skipped successfully:', result);
+                    
+                    // Show session result with proper data structure
+                    showSessionResult({
+                        action: result.action,
+                        message: result.message,
+                        timestamp: result.timestamp,
+                        user_data: currentUser,
+                        spoof_score: currentUser.spoof_score || 0.0,
+                        voice_skipped: true
+                    });
+                    
+                    // Hide voice options
+                    document.getElementById('voiceOptionsItem').style.display = 'none';
+                    
+                    // Auto-restart after 5 seconds to show result
+                    setTimeout(() => {
+                        resetInterface();
+                        startBiometricSession();
+                    }, 5000);
+                    
+                } else {
+                    const error = await response.json();
+                    console.error('❌ Voice skip failed:', error);
+                    alert('Failed to skip voice verification. Please try again.');
+                }
+                
+                // Hide voice modal if it's showing
+                document.getElementById('voiceModal').classList.remove('show');
+                
+                // Reset voice controls
+                resetVoiceModal();
+                
+            } catch (error) {
+                console.error('❌ Voice skip error:', error);
+                alert('Voice skip failed. Please try again.');
+                resetVoiceModal();
+            }
+        }
+
+        async function markSession() {
+            try {
+                console.log('🎯 Marking session...');
+                
+                const response = await fetch('/api/mark-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Session marked successfully:', result);
+                    
+                    // Show session result with all the details
+                    showSessionResult({
+                        action: result.action,
+                        message: result.message,
+                        timestamp: result.timestamp,
+                        user_data: currentUser,
+                        spoof_score: currentUser.spoof_score || 0.0,
+                        voice_skipped: false
+                    });
+                    
+                    // Hide voice options
+                    document.getElementById('voiceOptionsItem').style.display = 'none';
+                    
+                    // Auto-restart after 5 seconds to show result
+                    setTimeout(() => {
+                        resetInterface();
+                        startBiometricSession();
+                    }, 5000);
+                    
+                } else {
+                    const error = await response.json();
+                    console.error('❌ Session marking failed:', error);
+                    updateStatus('error', 'Session marking failed - try again');
+                }
+                
+            } catch (error) {
+                console.error('❌ Session marking error:', error);
+                updateStatus('error', 'Session marking error - try again');
+            }
+        }
+
+        function resetVoiceModal() {
+            // Reset voice recording UI
+            document.getElementById('voiceRecordingStatus').style.display = 'none';
+            document.getElementById('verifyVoiceBtn').disabled = false;
+            document.getElementById('skipVoiceBtn').disabled = false;
+            isRecordingVoice = false;
+            
+            // Hide voice options
+            document.getElementById('voiceOptionsItem').style.display = 'none';
+            
+            console.log('🔄 Voice UI reset');
+        }
+
+        function showSessionResult(data) {
+            const resultItem = document.getElementById('sessionResultItem');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultTimestamp = document.getElementById('resultTimestamp');
+            
+            // Show session result (matches session.py rich display format)
+            console.log('\n' + '='.repeat(50));
+            console.log(`🎯 SESSION RESULT: ${data.action}`);
+            console.log('='.repeat(50));
+            
+            // Update result title (matches session.py console output)
+            if (data.action === 'LOGIN') {
+                resultTitle.textContent = 'LOGIN SUCCESSFUL!';
+                resultItem.className = 'status-item success';
+                resultItem.style.display = 'block';
+                console.log('✅ LOGIN SUCCESSFUL!');
+            } else if (data.action === 'LOGOUT') {
+                resultTitle.textContent = 'LOGOUT SUCCESSFUL!';
+                resultItem.className = 'status-item success';
+                resultItem.style.display = 'block';
+                console.log('✅ LOGOUT SUCCESSFUL!');
+            } else if (data.action === 'MALPRACTICE') {
+                resultTitle.textContent = 'MALPRACTICE DETECTED';
+                resultItem.className = 'status-item error';
+                resultItem.style.display = 'block';
+                console.log('⚠️ MALPRACTICE DETECTED');
+            } else {
+                resultTitle.textContent = data.action.replace('_', ' ').toUpperCase();
+                resultItem.className = 'status-item error';
+                resultItem.style.display = 'block';
+                console.log(`❌ ${data.action}`);
+            }
+            
+            // Rich display details (exactly like session.py formatting)
+            let details = '';
+            if (data.action === 'LOGIN' || data.action === 'LOGOUT') {
+                const userName = data.user_data ? data.user_data.name : 'Unknown User';
+                const userEmail = data.user_data ? data.user_data.email : 'unknown@email.com';
+                const faceConfidence = data.user_data ? (data.user_data.confidence * 100).toFixed(1) : '0.0';
+                const spoofConfidence = data.spoof_score ? (data.spoof_score * 100).toFixed(1) : '0.0';
+                
+                details = `
+                    ${data.action === 'LOGIN' ? 'Welcome' : 'Goodbye'}: <strong>${userName}</strong> (${userEmail})<br>
+                    Face: ${faceConfidence}% | Anti-Spoof: ${spoofConfidence}%<br>
+                    ${data.voice_skipped ? 'Voice: Skipped by user' : 'Voice: Verified'}<br>
+                    Status: <strong style="color: #FF6A00;">PRESENT TODAY</strong>
+                `;
+                
+                // Console output (matches session.py rich formatting)
+                console.log(`${data.action === 'LOGIN' ? 'Welcome' : 'Goodbye'}: ${userName} (${userEmail})`);
+                console.log('Authentication successful');
+                console.log(`Voice: ${data.voice_skipped ? 'Skipped' : 'Verified'}`);
+                console.log('Status: PRESENT TODAY');
+            } else {
+                const userName = data.user_data ? data.user_data.name : 'Unknown';
+                details = `User: <strong>${userName}</strong><br>${data.message || 'Session completed'}`;
+                console.log(`User: ${userName}`);
+                console.log(`Message: ${data.message || 'Session completed'}`);
+            }
+            
+            resultDetails.innerHTML = details;
+            resultTimestamp.textContent = data.timestamp;
+            
+            console.log('='.repeat(50));
+            console.log('📋 Session complete — Ready for next user...');
+            console.log('='.repeat(50));
+        }
+
+        function resetInterface() {
+            // Complete interface reset (matches session.py session cleanup)
+            console.log('🔄 Resetting interface for next session...');
+            
+            // Hide all status items
+            document.getElementById('userInfoItem').style.display = 'none';
+            document.getElementById('confidenceItem').style.display = 'none';
+            document.getElementById('voiceOptionsItem').style.display = 'none';
+            document.getElementById('sessionResultItem').style.display = 'none';
+            document.getElementById('voiceModal').classList.remove('show');
+            
+            // Reset all session variables (like session.py variable reset)
+            frameCount = 0;
+            currentUser = null;
+            isRecordingVoice = false;
+            sessionActive = false;
+            isProcessing = false;
+            
+            // Reset confidence displays
+            document.getElementById('faceConfidence').textContent = '--%';
+            document.getElementById('spoofConfidence').textContent = '--%';
+            document.getElementById('voiceConfidence').textContent = '--%';
+            
+            // Reset confidence bars
+            document.getElementById('faceConfidenceBar').style.width = '0%';
+            document.getElementById('spoofConfidenceBar').style.width = '0%';
+            document.getElementById('voiceConfidenceBar').style.width = '0%';
+            
+            // Reset voice recording status
+            document.getElementById('voiceRecordingStatus').style.display = 'none';
+            isRecordingVoice = false;
+            
+            // Clear status
+            updateStatus('ready', 'Ready for next session...');
+            
+            console.log('🔄 Interface reset complete');
+        }
+
+        // ==================== FACE GUIDE FUNCTIONS ====================
+
+        function controlFaceGuide(statusType) {
+            const faceGuide = document.getElementById('faceGuideOverlay');
+            
+            switch(statusType) {
+                case 'waiting':
+                    showFaceGuide('Position your face within the box');
+                    break;
+                case 'scanning':
+                    showFaceGuide('Keep your face steady...');
+                    break;
+                case 'recognized':
+                case 'spoof':
+                case 'unknown':
+                    hideFaceGuide();
+                    break;
+                default:
+                    showFaceGuide('Position your face within the box');
+                    break;
+            }
+        }
+
+        function showFaceGuide(text = 'Position your face within the box') {
+            const faceGuide = document.getElementById('faceGuideOverlay');
+            const guideText = document.querySelector('.face-guide-text');
+            
+            if (faceGuide) {
+                faceGuide.classList.remove('hidden');
+                if (guideText) {
+                    guideText.textContent = text;
+                }
+            }
+        }
+
+        function hideFaceGuide() {
+            const faceGuide = document.getElementById('faceGuideOverlay');
+            if (faceGuide) {
+                faceGuide.classList.add('hidden');
+            }
+        }
+
+        // ==================== ADMIN FUNCTIONS ====================
+
+        function showAdminLogin() {
+            // Redirect to separate admin page
+            window.location.href = '/admin';
+        }
+
+    </script>
+</body>
+</html>

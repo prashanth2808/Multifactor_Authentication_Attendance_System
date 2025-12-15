@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Biometric System</title>
+    <style>
+        /* Professional Enterprise CSS - Admin Theme */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-register {
+            background: #1e3a8a;
+            border: 2px solid #1e3a8a;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-register:hover {
+            background: #1e40af;
+            border-color: #1e40af;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+        }
+
+
+        /* Navigation Tabs */
+        .admin-nav {
+            background: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #64748b;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab.active {
+            color: #FF6A00;
+            border-bottom-color: #FF6A00;
+        }
+
+        .nav-tab:hover:not(.active) {
+            color: #374151;
+        }
+
+        /* Main Content */
+        .admin-main {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #FF6A00;
+        }
+
+        .summary-card.absent {
+            border-left-color: #dc2626;
+        }
+
+        .summary-card.total {
+            border-left-color: #3b82f6;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .card-value.present {
+            color: #FF6A00;
+        }
+
+        .card-value.absent {
+            color: #dc2626;
+        }
+
+        .card-value.total {
+            color: #3b82f6;
+        }
+
+        /* Data Tables */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-header {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            background: #f8fafc;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .admin-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+
+        .admin-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status Indicators */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-present {
+            background: #fed7aa;
+            color: #CC5500;
+        }
+
+        .status-absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-yes {
+            background: #fed7aa;
+            color: #CC5500;
+        }
+
+        .status-no {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        /* Date Picker Section */
+        .date-picker-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .date-picker-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .date-input {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #FF6A00;
+            box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.1);
+        }
+
+        .btn-load {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-load:hover {
+            background: linear-gradient(135deg, #CC5500 0%, #AA4400 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Loading and Error States */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .error {
+            text-align: center;
+            padding: 3rem;
+            color: #dc2626;
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        /* Login Screen Styles */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        /* Removed unused .login-screen.hidden class */
+
+        .login-container {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .login-input {
+            padding: 1rem 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: white;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+            background: white;
+        }
+
+        .login-button {
+            background: white;
+            color: #FF6A00;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+        }
+
+        .login-button:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .login-button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .back-to-system {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-to-system:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .login-error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #fecaca;
+        }
+
+        .admin-dashboard {
+            display: none;
+        }
+
+        .admin-dashboard.show {
+            display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .nav-tab {
+                padding: 1rem;
+                border-bottom: 1px solid #e2e8f0;
+                border-right: none;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-table {
+                font-size: 0.875rem;
+            }
+
+            .admin-table th,
+            .admin-table td {
+                padding: 0.75rem;
+            }
+
+            .login-container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+
+            .back-to-system {
+                position: static;
+                margin-bottom: 2rem;
+                align-self: flex-start;
+            }
+        }
+        /* Registration Form Styles */
+        .register-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .register-form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .form-header h2 {
+            color: #0f172a;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .registration-form {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            padding: 1rem 1.25rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FF6A00;
+            box-shadow: 0 0 0 4px rgba(255, 106, 0, 0.1);
+            background: white;
+        }
+
+        .biometric-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 2px solid #e2e8f0;
+        }
+
+        .biometric-section h3 {
+            color: #0f172a;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .capture-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 2px solid #e2e8f0;
+        }
+
+        .capture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .capture-header h4 {
+            color: #0f172a;
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .capture-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .capture-status.active {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .capture-status.completed {
+            background: #fed7aa;
+            color: #CC5500;
+        }
+
+        .capture-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 300px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .camera-placeholder {
+            text-align: center;
+            color: #64748b;
+        }
+
+        .camera-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .capture-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-capture {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-capture:hover {
+            background: linear-gradient(135deg, #CC5500 0%, #AA4400 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-capture:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .capture-progress {
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .voice-capture-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .voice-instructions {
+            background: #f0f9ff;
+            border: 2px solid #bae6fd;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .voice-instructions p {
+            margin: 0.5rem 0;
+            color: #0c4a6e;
+        }
+
+        .voice-controls {
+            display: flex;
+            justify-content: center;
+        }
+
+        .voice-clips {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .voice-clips h5 {
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        .clips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .clip-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 2px solid #e2e8f0;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #d1d5db;
+            transform: translateY(-1px);
+        }
+
+        .registration-status {
+            margin-top: 2rem;
+            background: #f0f9ff;
+            border: 2px solid #bae6fd;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .status-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-icon {
+            font-size: 3rem;
+        }
+
+        .status-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <a href="/" style="position: absolute; top: 20px; left: 20px; color: #FF6A00; text-decoration: none; font-weight: 600;">
+            ← Back to System
+        </a>
+        <div class="login-container">
+            <div class="login-title">👤 Admin Login</div>
+            <div class="login-subtitle">Enter your credentials to access the admin dashboard</div>
+            
+            <div id="loginError" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                Invalid credentials! Please try again.
+            </div>
+            
+            <form class="login-form" id="loginForm">
+                <input 
+                    type="email" 
+                    id="adminEmail" 
+                    class="login-input" 
+                    placeholder="Admin Email" 
+                    required
+                    autocomplete="username"
+                >
+                <input 
+                    type="password" 
+                    id="adminPassword" 
+                    class="login-input" 
+                    placeholder="Password" 
+                    required
+                    autocomplete="current-password"
+                >
+                <button type="submit" id="loginButton" class="login-button">
+                    🔓 Login to Dashboard
+                </button>
+            </form>
+            
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (Hidden until login) -->
+    <div id="adminDashboard" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <h1>👤 Admin Dashboard</h1>
+            <div class="header-actions">
+                <a href="/register" class="btn-register">
+                    ➕ Register
+                </a>
+                <button onclick="logout()" class="btn-back" style="background: rgba(220, 38, 38, 0.2); border-color: rgba(220, 38, 38, 0.3);">
+                    🔓 Logout
+                </button>
+                <a href="/" class="btn-back">
+                    ← Back to System
+                </a>
+            </div>
+        </header>
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('users')" id="usersTab">
+                👥 Users
+            </button>
+            <button class="nav-tab" onclick="switchTab('today')" id="todayTab">
+                📅 Today's Attendance
+            </button>
+            <button class="nav-tab" onclick="switchTab('logs')" id="logsTab">
+                📝 Session Logs
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Users Tab -->
+        <div id="usersContent" class="tab-content active">
+            <div class="page-title">
+                👥 Registered Users
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">All Registered Users</div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input id="userSearchInput" type="text" placeholder="Search by name, email, phone, type or class" 
+                               style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; min-width:280px;"
+                               onkeypress="if(event.key==='Enter'){ searchUsers(); }">
+                        <button onclick="searchUsers()" class="btn-load" style="padding: 0.55rem 1rem;">🔎 Search</button>
+                        <button onclick="clearUserSearch()" class="btn-secondary" style="padding: 0.55rem 1rem;">✖ Clear</button>
+                        <div id="usersCount" style="color: #64748b; margin-left: 8px;">Loading...</div>
+                    </div>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Photos</th>
+                            <th>Voice</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="5" class="loading">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Today's Attendance Tab -->
+        <div id="todayContent" class="tab-content">
+            <div class="page-title">
+                📅 Today's Attendance
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card total">
+                    <div class="card-title">Total Users</div>
+                    <div class="card-value total" id="totalUsersCard">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-title">Present Today</div>
+                    <div class="card-value present" id="presentUsersCard">0</div>
+                </div>
+                <div class="summary-card absent">
+                    <div class="card-title">Absent Today</div>
+                    <div class="card-value absent" id="absentUsersCard">0</div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title" id="todayTableTitle">Today's Attendance</div>
+                    <div style="color: #64748b; font-size: 0.9rem;" id="todayDate"></div>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Login</th>
+                            <th>Logout</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayTableBody">
+                        <tr><td colspan="6" class="loading">Loading attendance...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Session Logs Tab -->
+        <div id="logsContent" class="tab-content">
+            <div class="page-title">
+                📝 Session Logs
+            </div>
+            
+            <!-- Export Controls -->
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 15px 0; color: #1e293b;">📄 Export Attendance Data</h3>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label for="startDate" style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Start Date:</label>
+                        <input type="date" id="startDate" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label for="endDate" style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">End Date:</label>
+                        <input type="date" id="endDate" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button onclick="exportCSV()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+                            📥 Export CSV
+                        </button>
+                        <button onclick="setTodayDates()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-left: 10px; transition: background 0.2s;">
+                            📅 Today
+                        </button>
+                    </div>
+                </div>
+                <p style="margin: 10px 0 0 0; color: #6b7280; font-size: 14px;">
+                    💡 Select date range to export attendance records as CSV file. Leave end date empty to export single day.
+                </p>
+            </div>
+            
+            <!-- Date Picker -->
+            <div class="date-picker-section">
+                <div class="date-picker-content">
+                    <label for="logDate" style="font-weight: 600; color: #374151;">Select Date:</label>
+                    <input type="date" id="logDate" class="date-input">
+                    <button class="btn-load" onclick="loadLogs()">Load Logs</button>
+                    <div style="color: #64748b; font-size: 0.9rem;">
+                        Choose a date to view session logs
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Session Logs</div>
+                    <div id="logsCount" style="color: #64748b;">Select a date</div>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Login</th>
+                            <th>Logout</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr><td colspan="6" class="empty">Select a date to view logs</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+    </div> <!-- Close admin-dashboard div -->
+
+    <script>
+        // Global cache for users to enable client-side search
+        let allUsersCache = [];
+
+        // Initialize admin dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date in log date input
+            document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('todayDate').textContent = new Date().toLocaleDateString();
+            
+            // Set up login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Focus on email input
+            document.getElementById('adminEmail').focus();
+        });
+
+        // Admin Login Function
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const loginButton = document.getElementById('loginButton');
+            const loginError = document.getElementById('loginError');
+            
+            // Disable button during login
+            loginButton.disabled = true;
+            loginButton.textContent = '🔄 Logging in...';
+            
+            // Hide previous error
+            loginError.style.display = 'none';
+            
+            try {
+                // Simple client-side authentication (you can change these credentials)
+                // In production, this should be done server-side for security
+                if (email === 'admin@biometric.com' && password === 'admin123') {
+                    // Successful login
+                    console.log('✅ Admin login successful');
+                    
+                    // Hide login screen and show dashboard
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('adminDashboard').style.display = 'block';
+                    
+                    // Load initial data
+                    loadUsers();
+                    
+                    // Store login state (optional - for refresh persistence)
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    
+                } else {
+                    // Failed login
+                    console.log('❌ Admin login failed');
+                    loginError.style.display = 'block';
+                    loginError.textContent = 'Invalid credentials! Please check your email and password.';
+                    
+                    // Clear password field
+                    document.getElementById('adminPassword').value = '';
+                    document.getElementById('adminPassword').focus();
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                loginError.style.display = 'block';
+                loginError.textContent = 'Login error. Please try again.';
+            } finally {
+                // Re-enable button
+                loginButton.disabled = false;
+                loginButton.textContent = '🔓 Login to Dashboard';
+            }
+        }
+
+        // Logout Function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                console.log('🔒 Admin logout');
+                
+                // Hide dashboard and show login screen
+                document.getElementById('adminDashboard').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+                
+                // Clear login state
+                sessionStorage.removeItem('adminLoggedIn');
+                
+                // Reset form
+                document.getElementById('loginForm').reset();
+                document.getElementById('loginError').style.display = 'none';
+                
+                // Focus on email input
+                setTimeout(() => {
+                    document.getElementById('adminEmail').focus();
+                }, 100);
+            }
+        }
+
+        // Removed unused checkLoginState function
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Content').classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'today':
+                    loadTodayAttendance();
+                    break;
+                case 'logs':
+                    // Logs are loaded when date is selected
+                    break;
+                case 'register':
+                    initializeRegistrationForm();
+                    break;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                if (response.ok) {
+                    const users = await response.json();
+                    allUsersCache = users || [];
+                    displayUsers(allUsersCache);
+                } else {
+                    document.getElementById('usersTableBody').innerHTML = 
+                        '<tr><td colspan="5" class="error">Error loading users</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="5" class="error">Error loading users</td></tr>';
+            }
+        }
+
+        function matchUser(user, q) {
+            try {
+                const name = (user.name || '').toLowerCase();
+                const email = (user.email || '').toLowerCase();
+                const phone = (user.phone || '').toLowerCase();
+                const utype = (user.user_type || '').toLowerCase();
+                const cls = (user.student_class || '').toLowerCase();
+                return name.includes(q) || email.includes(q) || phone.includes(q) || utype.includes(q) || cls.includes(q);
+            } catch { return false; }
+        }
+
+        function displayUsers(users) {
+            // Keep current search active when re-displaying
+            const q = document.getElementById('userSearchInput')?.value?.trim().toLowerCase();
+            if (q) {
+                users = users.filter(u => matchUser(u, q));
+            }
+            const tbody = document.getElementById('usersTableBody');
+            const count = document.getElementById('usersCount');
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty">No users registered</td></tr>';
+                count.textContent = '0 users';
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><strong><a href="/admin/user/${user.user_id}" style="color:#1e3a8a; text-decoration:none;">${user.name}</a></strong></td>
+                    <td>${user.email}</td>
+                    <td>${user.photo_count || 0}</td>
+                    <td>
+                        <span class="status-badge ${user.voice_embedding ? 'status-yes' : 'status-no'}">
+                            ${user.voice_embedding ? 'Yes' : 'No'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            const qText = document.getElementById('userSearchInput')?.value?.trim();
+            count.textContent = qText ? `${users.length} users (filtered)` : `${users.length} users`;
+        }
+
+        function searchUsers() {
+            const q = document.getElementById('userSearchInput').value.trim().toLowerCase();
+            const filtered = q ? (allUsersCache || []).filter(u => matchUser(u, q)) : (allUsersCache || []);
+            displayUsers(filtered);
+        }
+
+        function clearUserSearch() {
+            const input = document.getElementById('userSearchInput');
+            input.value = '';
+            displayUsers(allUsersCache || []);
+            input.focus();
+        }
+
+        async function loadTodayAttendance() {
+            try {
+                const response = await fetch('/api/admin/today');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayTodayAttendance(data);
+                } else {
+                    document.getElementById('todayTableBody').innerHTML = 
+                        '<tr><td colspan="6" class="error">Error loading attendance</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading today attendance:', error);
+                document.getElementById('todayTableBody').innerHTML = 
+                    '<tr><td colspan="6" class="error">Error loading attendance</td></tr>';
+            }
+        }
+
+        function displayTodayAttendance(data) {
+            const tbody = document.getElementById('todayTableBody');
+            
+            // Update summary cards
+            document.getElementById('totalUsersCard').textContent = data.total || 0;
+            document.getElementById('presentUsersCard').textContent = data.present || 0;
+            document.getElementById('absentUsersCard').textContent = data.absent || 0;
+            
+            // Display attendance data
+            if (!data.attendance || data.attendance.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty">No attendance records for today</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.attendance.map(record => `
+                <tr>
+                    <td><strong>${record.name}</strong></td>
+                    <td>${record.email}</td>
+                    <td>${record.login || '—'}</td>
+                    <td>${record.logout || '—'}</td>
+                    <td>${record.duration || '—'}</td>
+                    <td>
+                        <span class="status-badge ${(record.status.includes('Present') || record.status.includes('Pst')) ? 'status-present' : 'status-absent'}">
+                            ${record.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadLogs() {
+            const date = document.getElementById('logDate').value;
+            if (!date) {
+                alert('Please select a date');
+                return;
+            }
+
+            try {
+                document.getElementById('logsTableBody').innerHTML = 
+                    '<tr><td colspan="6" class="loading">Loading logs...</td></tr>';
+
+                const response = await fetch(`/api/admin/logs?date=${date}`);
+                if (response.ok) {
+                    const logs = await response.json();
+                    displayLogs(logs, date);
+                } else {
+                    document.getElementById('logsTableBody').innerHTML = 
+                        '<tr><td colspan="6" class="error">Error loading logs</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('logsTableBody').innerHTML = 
+                    '<tr><td colspan="6" class="error">Error loading logs</td></tr>';
+            }
+        }
+
+        function displayLogs(logs, date) {
+            const tbody = document.getElementById('logsTableBody');
+            const count = document.getElementById('logsCount');
+            
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty">No logs found for this date</td></tr>';
+                count.textContent = 'No records';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td><strong>${log.name}</strong></td>
+                    <td>${log.email}</td>
+                    <td>${log.login || '—'}</td>
+                    <td>${log.logout || '—'}</td>
+                    <td>${log.duration || '—'}</td>
+                    <td>
+                        <span class="status-badge ${(log.status.includes('Present') || log.status.includes('Pst')) ? 'status-present' : 'status-absent'}">
+                            ${log.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            count.textContent = `${logs.length} records for ${new Date(date).toLocaleDateString()}`;
+        }
+
+        // Registration Functions
+        let registrationState = {
+            name: '',
+            email: '',
+            faceImages: [],
+            voiceClips: [],
+            faceEmbeddings: [],
+            voiceEmbedding: null,
+            stream: null
+        };
+
+        function initializeRegistrationForm() {
+            console.log('🔥 Initializing Registration Form');
+            resetRegistrationForm();
+            setupRegistrationEventListeners();
+        }
+
+        function setupRegistrationEventListeners() {
+            // Form submission
+            document.getElementById('registrationForm').addEventListener('submit', handleRegistration);
+            
+            // Face capture buttons
+            document.getElementById('startFaceCapture').addEventListener('click', startFaceCapture);
+            document.getElementById('capturePhotos').addEventListener('click', capturePhotos);
+            
+            // Voice capture button
+            document.getElementById('startVoiceCapture').addEventListener('click', startVoiceCapture);
+            
+            // Reset form button
+            document.getElementById('resetForm').addEventListener('click', resetRegistrationForm);
+        }
+
+        function resetRegistrationForm() {
+            // Reset form data
+            document.getElementById('registrationForm').reset();
+            registrationState = {
+                name: '',
+                email: '',
+                faceImages: [],
+                voiceClips: [],
+                faceEmbeddings: [],
+                voiceEmbedding: null,
+                stream: null
+            };
+            
+            // Reset UI states
+            updateCaptureStatus('faceStatus', 'Not Started');
+            updateCaptureStatus('voiceStatus', 'Not Started');
+            
+            document.getElementById('startFaceCapture').style.display = 'inline-block';
+            document.getElementById('capturePhotos').style.display = 'none';
+            document.getElementById('faceProgress').style.display = 'none';
+            document.getElementById('voiceProgress').style.display = 'none';
+            document.getElementById('voiceClips').style.display = 'none';
+            document.getElementById('registrationStatus').style.display = 'none';
+            
+            document.getElementById('startVoiceCapture').disabled = true;
+            document.getElementById('registerUser').disabled = true;
+            
+            // Stop camera if active
+            if (registrationState.stream) {
+                registrationState.stream.getTracks().forEach(track => track.stop());
+                registrationState.stream = null;
+            }
+        }
+
+        function updateCaptureStatus(elementId, status, type = 'not-started') {
+            const element = document.getElementById(elementId);
+            element.textContent = status;
+            element.className = 'capture-status';
+            
+            if (type === 'active') {
+                element.classList.add('active');
+            } else if (type === 'completed') {
+                element.classList.add('completed');
+            }
+        }
+
+        async function startFaceCapture() {
+            try {
+                console.log('📷 Starting face capture...');
+                updateCaptureStatus('faceStatus', 'Starting Camera...', 'active');
+                
+                // Get camera access
+                registrationState.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 }
+                });
+                
+                // Create video element
+                const videoElement = document.createElement('video');
+                videoElement.srcObject = registrationState.stream;
+                videoElement.autoplay = true;
+                videoElement.style.width = '100%';
+                videoElement.style.height = '100%';
+                videoElement.style.objectFit = 'cover';
+                
+                // Replace camera placeholder with video
+                const cameraPreview = document.getElementById('cameraPreview');
+                cameraPreview.innerHTML = '';
+                cameraPreview.appendChild(videoElement);
+                
+                // Show capture photos button
+                document.getElementById('startFaceCapture').style.display = 'none';
+                document.getElementById('capturePhotos').style.display = 'inline-block';
+                
+                updateCaptureStatus('faceStatus', 'Camera Ready', 'active');
+                console.log('✅ Camera started successfully');
+                
+            } catch (error) {
+                console.error('❌ Camera error:', error);
+                updateCaptureStatus('faceStatus', 'Camera Error');
+                alert('Camera access failed. Please check permissions and try again.');
+            }
+        }
+
+        async function capturePhotos() {
+            try {
+                console.log('📸 Starting photo capture...');
+                updateCaptureStatus('faceStatus', 'Capturing Photos...', 'active');
+                
+                const progressDiv = document.getElementById('faceProgress');
+                const progressText = document.getElementById('faceProgressText');
+                const progressFill = document.getElementById('faceProgressFill');
+                
+                progressDiv.style.display = 'block';
+                document.getElementById('capturePhotos').disabled = true;
+                
+                // Countdown
+                for (let i = 5; i > 0; i--) {
+                    progressText.textContent = `Starting in ${i}...`;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Capture 3 photos
+                const videoElement = document.querySelector('#cameraPreview video');
+                registrationState.faceImages = [];
+                
+                for (let i = 1; i <= 3; i++) {
+                    progressText.textContent = `Capturing photo ${i}/3...`;
+                    progressFill.style.width = `${(i/3) * 100}%`;
+                    
+                    // Capture frame from video
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = videoElement.videoWidth;
+                    canvas.height = videoElement.videoHeight;
+                    context.drawImage(videoElement, 0, 0);
+                    
+                    // Convert to base64
+                    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                    registrationState.faceImages.push(imageData);
+                    
+                    console.log(`✅ Photo ${i}/3 captured`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // Process images (generate embeddings)
+                progressText.textContent = 'Processing images...';
+                await processFaceImages();
+                
+                updateCaptureStatus('faceStatus', 'Completed ✅', 'completed');
+                progressDiv.style.display = 'none';
+                
+                // Enable voice capture
+                document.getElementById('startVoiceCapture').disabled = false;
+                
+                console.log('✅ Face capture completed successfully');
+                
+            } catch (error) {
+                console.error('❌ Photo capture error:', error);
+                updateCaptureStatus('faceStatus', 'Capture Failed');
+                document.getElementById('faceProgress').style.display = 'none';
+                document.getElementById('capturePhotos').disabled = false;
+            }
+        }
+
+        async function processFaceImages() {
+            try {
+                // Send images to backend for embedding generation
+                for (let i = 0; i < registrationState.faceImages.length; i++) {
+                    const response = await fetch('/api/register/process-face', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: registrationState.faceImages[i] })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        registrationState.faceEmbeddings.push(result.embedding);
+                    } else {
+                        throw new Error(`Failed to process image ${i+1}`);
+                    }
+                }
+                
+                console.log(`✅ Generated ${registrationState.faceEmbeddings.length} face embeddings`);
+                
+            } catch (error) {
+                console.error('❌ Face processing error:', error);
+                throw error;
+            }
+        }
+
+        async function startVoiceCapture() {
+            try {
+                console.log('🎤 Starting voice capture...');
+                updateCaptureStatus('voiceStatus', 'Recording...', 'active');
+                
+                const progressDiv = document.getElementById('voiceProgress');
+                const progressText = document.getElementById('voiceProgressText');
+                const progressFill = document.getElementById('voiceProgressFill');
+                const clipsDiv = document.getElementById('voiceClips');
+                const clipsList = document.getElementById('clipsList');
+                
+                progressDiv.style.display = 'block';
+                clipsDiv.style.display = 'block';
+                document.getElementById('startVoiceCapture').disabled = true;
+                
+                // Record 3 voice clips
+                registrationState.voiceClips = [];
+                clipsList.innerHTML = '';
+                
+                for (let i = 1; i <= 3; i++) {
+                    progressText.textContent = `Recording clip ${i}/3... (5 seconds)`;
+                    progressFill.style.width = `${(i/3) * 100}%`;
+                    
+                    // Record audio clip
+                    const audioData = await recordAudioClip(5000); // 5 seconds
+                    registrationState.voiceClips.push(audioData);
+                    
+                    // Add clip to UI
+                    const clipItem = document.createElement('div');
+                    clipItem.className = 'clip-item';
+                    clipItem.innerHTML = `<span>Voice Clip ${i}</span><span>✅ Recorded</span>`;
+                    clipsList.appendChild(clipItem);
+                    
+                    console.log(`✅ Voice clip ${i}/3 recorded`);
+                    
+                    if (i < 3) {
+                        progressText.textContent = `Next clip in 2 seconds...`;
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+                
+                // Process voice clips (generate embedding)
+                progressText.textContent = 'Processing voice clips...';
+                await processVoiceClips();
+                
+                updateCaptureStatus('voiceStatus', 'Completed ✅', 'completed');
+                progressDiv.style.display = 'none';
+                
+                // Enable registration button
+                document.getElementById('registerUser').disabled = false;
+                
+                console.log('✅ Voice capture completed successfully');
+                
+            } catch (error) {
+                console.error('❌ Voice capture error:', error);
+                updateCaptureStatus('voiceStatus', 'Recording Failed');
+                document.getElementById('voiceProgress').style.display = 'none';
+                document.getElementById('startVoiceCapture').disabled = false;
+            }
+        }
+
+        async function recordAudioClip(duration) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const mediaRecorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        chunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/wav' });
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    setTimeout(() => mediaRecorder.stop(), duration);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        async function processVoiceClips() {
+            try {
+                // Send voice clips to backend for embedding generation
+                const response = await fetch('/api/register/process-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voiceClips: registrationState.voiceClips })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    registrationState.voiceEmbedding = result.embedding;
+                    console.log('✅ Voice embedding generated');
+                } else {
+                    throw new Error('Failed to process voice clips');
+                }
+                
+            } catch (error) {
+                console.error('❌ Voice processing error:', error);
+                throw error;
+            }
+        }
+
+        async function handleRegistration(event) {
+            event.preventDefault();
+            
+            try {
+                // Get form data
+                registrationState.name = document.getElementById('userName').value.trim();
+                registrationState.email = document.getElementById('userEmail').value.trim();
+                
+                if (!registrationState.name || !registrationState.email) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+                
+                if (registrationState.faceEmbeddings.length !== 3) {
+                    alert('Please complete face capture (3 photos required)');
+                    return;
+                }
+                
+                if (!registrationState.voiceEmbedding) {
+                    alert('Please complete voice capture');
+                    return;
+                }
+                
+                console.log('📝 Starting user registration...');
+                showRegistrationStatus('⏳', 'Processing registration...');
+                
+                // Submit registration
+                const response = await fetch('/api/register/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: registrationState.name,
+                        email: registrationState.email,
+                        faceEmbeddings: registrationState.faceEmbeddings,
+                        voiceEmbedding: registrationState.voiceEmbedding,
+                        faceImages: registrationState.faceImages
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showRegistrationStatus('✅', `Registration successful! User ID: ${result.userId}`);
+                    
+                    // Reset form after 3 seconds
+                    setTimeout(() => {
+                        resetRegistrationForm();
+                    }, 3000);
+                    
+                    console.log('✅ Registration completed successfully');
+                    
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Registration failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ Registration error:', error);
+                showRegistrationStatus('❌', `Registration failed: ${error.message}`);
+            }
+        }
+
+        function showRegistrationStatus(icon, message) {
+            const statusDiv = document.getElementById('registrationStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            
+            statusIcon.textContent = icon;
+            statusText.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+        
+        // CSV Export Functions
+        function setTodayDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+        }
+        
+        function exportCSV() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate) {
+                alert('Please select a start date');
+                return;
+            }
+            
+            // Build export URL
+            let exportUrl = '/api/admin/export-csv?start_date=' + startDate;
+            if (endDate && endDate !== startDate) {
+                exportUrl += '&end_date=' + endDate;
+            }
+            
+            // Show loading message
+            const originalButton = event.target;
+            const originalText = originalButton.textContent;
+            originalButton.textContent = '⏳ Exporting...';
+            originalButton.disabled = true;
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                originalButton.textContent = originalText;
+                originalButton.disabled = false;
+            }, 2000);
+        }
+        
+        // Set default dates on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTodayDates();
+        });
+    </script>
+</body>
+</html>

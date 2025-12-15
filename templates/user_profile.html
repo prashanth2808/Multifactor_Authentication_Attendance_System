@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile</title>
+  <style>
+    /* Match Admin Dashboard Theme */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); color: #1e293b; min-height: 100vh; }
+
+    /* Header */
+    .header { background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.8rem; font-weight: 700; }
+    .header-actions { display: flex; gap: 1rem; }
+    .btn { padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; border: 2px solid transparent; cursor: pointer; }
+    .btn-back { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.3); color: white; }
+    .btn-back:hover { background: rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+    .btn-primary { background: #1e3a8a; border-color: #1e3a8a; color: white; }
+    .btn-primary:hover { background: #1e40af; border-color: #1e40af; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3); }
+
+    /* Main Container */
+    .main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .page-title { font-size: 1.6rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    /* Card */
+    .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; padding: 1.25rem; }
+    .card + .card { margin-top: 1rem; }
+    .muted { color: #64748b; }
+
+    /* Profile details vertical list */
+    .profile-grid { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+    .profile-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; display: flex; justify-content: flex-start; align-items: center; }
+    .profile-item strong { font-size: 0.95rem; color: #374151; }
+    .profile-item span { margin-left: 8px; }
+
+    /* Thumbnails */
+    /* Profile picture to the right of the name */
+    .name-header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .profile-pic { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; border: 3px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+
+    /* Calendar */
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .calendar-title { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+    .month-nav { display: flex; gap: 0.5rem; }
+    .month-btn { background: #ffffff; border: 2px solid #e2e8f0; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-weight: 600; color: #374151; }
+    .month-btn:hover { background: #f8fafc; border-color: #d1d5db; transform: translateY(-1px); }
+
+    .calendar { background: white; border-radius: 12px; border: 2px solid #e2e8f0; overflow: hidden; max-width: 520px; margin-top: 0.75rem; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; }
+    .weekday { font-weight: 700; text-align: center; padding: 4px 0; color: #374151; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; }
+    .day-cell { position: relative; height: 46px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: right; padding: 4px; background: #fff; }
+    .day-cell:hover { background: #f8fafc; }
+    .day-number { font-size: 11px; color: #374151; }
+    .dot { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; }
+    .dot.present { background: #10b981; /* green (present) */ }
+    .dot.absent { background: #ef4444; /* red (absent) */ }
+
+    .legend { display: flex; gap: 16px; align-items: center; margin-top: 8px; color: #374151; padding: 0 12px 12px 12px; }
+    .legend .chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+    .legend .chip .chip-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .chip-present { background: #10b981; }
+    .chip-absent { background: #ef4444; }
+
+    /* Link color */
+    a { color: #1e3a8a; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 768px) { .header { flex-direction: column; gap: 1rem; text-align: center; } }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1>👤 User Profile</h1>
+    <div class="header-actions">
+      <button class="btn btn-back" onclick="window.history.back()">← Back</button>
+      <a class="btn btn-back" href="/admin">← Back to Admin</a>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Title and Registered Date -->
+    <div class="name-header">
+      <div>
+        <div class="page-title" id="name">User Profile</div>
+        <div class="muted" id="registeredAt" style="margin-top: 0.25rem;"></div>
+      </div>
+      <img id="profilePic" class="profile-pic" alt="Profile" style="display:none;" />
+    </div>
+
+    <!-- Profile Details -->
+    <section class="card">
+      <div class="profile-grid">
+        <div class="profile-item"><strong>Email</strong><span id="email">-</span></div>
+        <div class="profile-item"><strong>Phone</strong><span id="phone">-</span></div>
+        <div class="profile-item"><strong>User Type</strong><span id="userType">-</span></div>
+        <div class="profile-item"><strong>Class</strong><span id="studentClass">-</span></div>
+        <div class="profile-item"><strong>Photos</strong><span id="photoCount">0</span></div>
+        <div class="profile-item"><strong>Voice embedding</strong><span id="voiceAvailable">No</span></div>
+      </div>
+    </section>
+
+    <!-- Attendance Calendar -->
+    <section class="card">
+      <div class="calendar-header">
+        <div class="calendar-title" id="monthLabel">Attendance</div>
+        <div class="month-nav">
+          <button class="month-btn" id="prevMonth">◀ Prev</button>
+          <button class="month-btn" id="nextMonth">Next ▶</button>
+        </div>
+      </div>
+      <div class="calendar">
+        <div class="calendar-grid" id="calendar"></div>
+        <div class="legend">
+          <div class="chip"><span class="chip-swatch chip-present"></span> Present</div>
+          <div class="chip"><span class="chip-swatch chip-absent"></span> Absent</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day Details -->
+    <section class="card" id="dayDetails" style="display:none; margin-top: 1rem;">
+      <div style="display:flex; justify-content: space-between; align-items: baseline;">
+        <div class="calendar-title" id="dayTitle">Day Details</div>
+        <div id="dayStatus" class="status-badge" style="background:#f8fafc; color:#374151;">—</div>
+      </div>
+      <div class="profile-grid" style="margin-top: 0.75rem;">
+        <div class="profile-item"><strong>Date</strong><span id="dDate">—</span></div>
+        <div class="profile-item"><strong>Login</strong><span id="dLogin">—</span></div>
+        <div class="profile-item"><strong>Logout</strong><span id="dLogout">—</span></div>
+        <div class="profile-item"><strong>Duration</strong><span id="dDuration">—</span></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const userId = window.location.pathname.split('/').pop();
+
+    const monthLabel = document.getElementById('monthLabel');
+    const calendar = document.getElementById('calendar');
+
+    const state = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    async function fetchUser() {
+      const res = await fetch(`/api/admin/user/${userId}`);
+      if (!res.ok) return;
+      const u = await res.json();
+      document.getElementById('name').textContent = u.name || 'User Profile';
+      document.getElementById('email').textContent = u.email || '-';
+      document.getElementById('phone').textContent = u.phone || '-';
+      document.getElementById('userType').textContent = u.user_type || '-';
+      document.getElementById('studentClass').textContent = u.student_class || '-';
+      document.getElementById('photoCount').textContent = u.photo_count ?? 0;
+      document.getElementById('voiceAvailable').textContent = u.voice_embedding ? 'Yes' : 'No';
+      const regText = u.registered_at ? `Registered: ${new Date(u.registered_at).toLocaleDateString()}` : '';
+      document.getElementById('registeredAt').textContent = regText;
+    }
+
+    function daysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+    function firstWeekday(year, month) { return new Date(year, month - 1, 1).getDay(); } // 0=Sun
+
+    function renderCalendar(data) {
+      const d = new Date(state.year, state.month - 1);
+      const monthName = d.toLocaleString('default', { month: 'long' });
+      monthLabel.textContent = `${monthName} ${state.year}`;
+
+      const totalDays = daysInMonth(state.year, state.month);
+      const startOffset = firstWeekday(state.year, state.month);
+
+      calendar.innerHTML = '';
+
+      const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      weekdays.forEach(w => {
+        const el = document.createElement('div');
+        el.className = 'weekday';
+        el.textContent = w;
+        calendar.appendChild(el);
+      });
+
+      for (let i = 0; i < startOffset; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'day-cell';
+        blank.style.background = '#f9fafb';
+        calendar.appendChild(blank);
+      }
+
+      const statusMap = new Map();
+      (data.days || []).forEach(x => statusMap.set(x.date, x.status));
+
+      for (let day = 1; day <= totalDays; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        const num = document.createElement('div');
+        num.className = 'day-number';
+        num.textContent = day;
+        cell.appendChild(num);
+        const dateStr = `${state.year}-${pad(state.month)}-${pad(day)}`;
+        const st = statusMap.get(dateStr);
+        if (st === 'present' || st === 'absent') {
+          const dot = document.createElement('div');
+          dot.className = `dot ${st}`;
+          cell.appendChild(dot);
+        }
+        cell.dataset.date = dateStr;
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('click', () => loadDayDetails(dateStr));
+        calendar.appendChild(cell);
+      }
+    }
+
+    async function fetchAttendance() {
+      const res = await fetch(`/api/admin/user/${userId}/attendance?year=${state.year}&month=${state.month}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderCalendar(data);
+    }
+
+    async function fetchProfilePic() {
+      try {
+        const res = await fetch(`/api/admin/user/${userId}/photos`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const urls = data.photos || [];
+        if (urls.length > 0) {
+          const pic = document.getElementById('profilePic');
+          pic.src = urls[0];
+          pic.style.display = 'block';
+        }
+      } catch (e) {}
+    }
+
+    async function loadDayDetails(dateStr) {
+      const res = await fetch(`/api/admin/user/${userId}/attendance/day?date=${dateStr}`);
+      if (!res.ok) return;
+      const d = await res.json();
+      document.getElementById('dayDetails').style.display = 'block';
+      document.getElementById('dayTitle').textContent = `Day Details`;
+      document.getElementById('dDate').textContent = d.date || dateStr;
+      document.getElementById('dLogin').textContent = d.login || '—';
+      document.getElementById('dLogout').textContent = d.logout || '—';
+      document.getElementById('dDuration').textContent = d.duration || '—';
+      const badge = document.getElementById('dayStatus');
+      const raw = (d.status || '').toString().toLowerCase();
+      let display = '—';
+      if (raw.includes('present') || raw.startsWith('pst')) display = 'Present';
+      else if (raw.includes('abs')) display = 'Absent';
+      badge.textContent = display;
+      // No background styling per request
+      badge.style.background = 'transparent';
+      badge.style.color = 'inherit';
+      badge.style.border = 'none';
+    }
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      state.month--;
+      if (state.month < 1) { state.month = 12; state.year--; }
+      fetchAttendance();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      state.month++;
+      if (state.month > 12) { state.month = 1; state.year++; }
+      fetchAttendance();
+    });
+
+    (async () => { await fetchUser(); await fetchAttendance(); await fetchProfilePic(); })();
+  </script>
+</body>
+</html>

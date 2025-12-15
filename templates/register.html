@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration - Face & Voice System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/validation_styles.css') }}">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            display: none;
+            padding: 40px;
+            min-height: 500px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .step.completed {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-container {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .progress-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+        }
+
+        .progress-step.completed:not(:last-child)::after {
+            background: #FF6A00;
+        }
+
+        .progress-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .progress-step.active .progress-number {
+            background: #FF6A00;
+        }
+
+        .progress-step.completed .progress-number {
+            background: #FF6A00;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .progress-step.active .progress-label {
+            color: #FF6A00;
+            font-weight: bold;
+        }
+
+        .step-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: #FF6A00;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .step-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #1e293b;
+        }
+
+        .step-subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #1e293b;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #FF6A00;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF6A00 0%, #CC5500 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #CC5500 0%, #AA4400 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #FF6A00;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .camera-container {
+            position: relative;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: scaleX(-1); /* Mirror camera for natural view */
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .photo-slot {
+            aspect-ratio: 1;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .photo-slot.captured {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+
+        .photo-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* Voice Registration Styles */
+        .voice-container {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            color: #1e293b;
+        }
+
+        .clip-status {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .clip-slot {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .clip-slot.recording {
+            border-color: #dc3545;
+            background: #fff5f5;
+            animation: pulse 1s infinite;
+        }
+
+        .clip-slot.completed {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .clip-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .recording .clip-icon {
+            color: #dc3545;
+        }
+
+        .completed .clip-icon {
+            color: #28a745;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+            transition: width 0.3s ease;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 20px 0;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .status-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            color: #0066cc;
+        }
+
+        .status-success {
+            background: #e7f5e7;
+            border: 1px solid #b3dfb3;
+            color: #006600;
+        }
+
+        .status-error {
+            background: #ffe7e7;
+            border: 1px solid #ffb3b3;
+            color: #cc0000;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #059669;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-3 {
+            margin-top: 20px;
+        }
+
+        .mb-3 {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>User Registration</h1>
+            <p>Register with face photos and voice clips for biometric authentication</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-step active" id="progress1">
+                    <div class="progress-number">1</div>
+                    <div class="progress-label">User Information</div>
+                </div>
+                <div class="progress-step" id="progress2">
+                    <div class="progress-number">2</div>
+                    <div class="progress-label">Face Registration</div>
+                </div>
+                <div class="progress-step" id="progress3">
+                    <div class="progress-number">3</div>
+                    <div class="progress-label">Voice Registration</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: User Information -->
+            <div class="step active" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h1 class="step-title">User Information</h1>
+                    <p class="step-subtitle">Please provide your basic information and user type</p>
+                </div>
+                
+                <!-- Validation Summary (Hidden by default) -->
+                <div class="validation-summary" id="validationSummary">
+                    <div class="validation-summary-title">
+                        ⚠️ Please fix the following issues:
+                    </div>
+                    <ul class="validation-summary-list" id="validationList">
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="userName">Full Name</label>
+                    <input type="text" id="userName" placeholder="Enter your full name" required 
+                           data-validation-tooltip="Name must be 2-50 characters, letters only">
+                    <div class="validation-tooltip">
+                        <span class="tooltip-text">Enter your full legal name (2-50 characters, letters only)</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userEmail">Email Address</label>
+                    <input type="email" id="userEmail" placeholder="Enter your email address" required
+                           data-validation-tooltip="Must be a valid email format">
+                    <div class="validation-tooltip">
+                        <span class="tooltip-text">Enter a valid email address for account verification</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userPhone">Phone Number</label>
+                    <input type="tel" id="userPhone" placeholder="Enter your phone number" required
+                           data-validation-tooltip="10-15 digits, may include spaces, dashes, parentheses">
+                    <div class="validation-tooltip">
+                        <span class="tooltip-text">Enter your phone number (10-15 digits, international format accepted)</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userType">User Type</label>
+                    <select id="userType" onchange="toggleUserTypeFields()" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                        <option value="">Select User Type</option>
+                        <option value="student">Student</option>
+                        <option value="faculty">Faculty</option>
+                    </select>
+                </div>
+                
+                <!-- Student Class Selection (Hidden by default) -->
+                <div class="form-group" id="studentClassGroup" style="display: none;">
+                    <label for="studentClass">Class</label>
+                    <select id="studentClass" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                        <option value="">Select Your Class</option>
+                        <option value="M.Sc in AI">M.Sc in AI</option>
+                        <option value="M.Sc in CS">M.Sc in CS</option>
+                        <option value="M.Sc in BA">M.Sc in BA</option>
+                        <option value="M.Tech in AI">M.Tech in AI</option>
+                        <option value="M.Tech in CS">M.Tech in CS</option>
+                    </select>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn btn-primary" id="step1NextBtn" onclick="validateAndProceed()" disabled>
+                        📸 Continue to Face Registration
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Face Registration -->
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <h1 class="step-title">Face Registration</h1>
+                    <p class="step-subtitle">Capture 3 clear photos of your face for biometric authentication</p>
+                </div>
+                
+                <div class="camera-container">
+                    <video id="videoElement" autoplay muted></video>
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-primary" onclick="capturePhoto()" id="captureBtn">
+                            📸 Capture Photo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="photo-grid">
+                    <div class="photo-slot" id="photo1">📷 Photo 1</div>
+                    <div class="photo-slot" id="photo2">📷 Photo 2</div>
+                    <div class="photo-slot" id="photo3">📷 Photo 3</div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" onclick="goBackToStep(1)" style="background: #6c757d; color: white; margin-right: 10px;">
+                        ← Back to User Info
+                    </button>
+                    <button class="btn btn-primary" onclick="startVoiceRegistration()" id="continueVoiceBtn" style="display: none;">
+                        Continue to Voice Registration
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Voice Registration -->
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <h1 class="step-title">Voice Registration</h1>
+                    <p class="step-subtitle">Record 3 voice samples for voice authentication</p>
+                </div>
+                
+                <div class="voice-container">
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <h4 style="color: #1e293b;">🎤 Voice Registration</h4>
+                        <p style="color: #1e293b;">Record 3 voice clips for voice authentication</p>
+                        <p style="color: #1e293b;"><strong>Each clip will be 5 seconds long</strong></p>
+                    </div>
+                    
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1976d2;">
+                        <p style="margin: 0; color: #1976d2; font-weight: 600;">
+                            📢 Please say: "Hello, my name is <span id="nameInPrompt">____</span>. I am verifying my voice."
+                        </p>
+                    </div>
+                    
+                    <!-- Voice Recording Status -->
+                    <div class="clip-status">
+                        <div class="clip-slot" id="clip1">
+                            <div class="clip-icon">🎤</div>
+                            <div><strong>Clip 1</strong></div>
+                            <div>Waiting...</div>
+                        </div>
+                        <div class="clip-slot" id="clip2">
+                            <div class="clip-icon">🎤</div>
+                            <div><strong>Clip 2</strong></div>
+                            <div>Waiting...</div>
+                        </div>
+                        <div class="clip-slot" id="clip3">
+                            <div class="clip-icon">🎤</div>
+                            <div><strong>Clip 3</strong></div>
+                            <div>Waiting...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="voiceProgress" style="width: 0%"></div>
+                    </div>
+                    
+                    <!-- Control Buttons -->
+                    <div style="text-align: center;">
+                        <button class="btn" onclick="goBackToStep(2)" style="background: #6c757d; color: white; margin-right: 10px;">
+                            ← Back to Face Registration
+                        </button>
+                        <button class="btn btn-primary" onclick="startCliVoiceRegistration()" id="startVoiceBtn">
+                            🎤 Start Voice Registration
+                        </button>
+                        <button class="btn btn-danger" onclick="recordNextClip()" id="recordClipBtn" style="display: none;">
+                            🔴 Record Clip
+                        </button>
+                        <button class="btn btn-success" onclick="completeRegistration()" id="completeBtn" style="display: none;">
+                            ✅ Complete Registration
+                        </button>
+                    </div>
+                    
+                    <!-- Status Messages -->
+                    <div id="voiceStatus"></div>
+                    
+                </div>
+            </div>
+
+            <!-- Registration Complete -->
+            <div class="step" id="stepComplete" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">✅</div>
+                    <h3 class="step-title">Registration Complete!</h3>
+                </div>
+                
+                <div class="status-success">
+                    <strong>🎉 Success!</strong> Your biometric profile has been created successfully.
+                </div>
+                
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="/" class="btn btn-primary">Go to Login System</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state management
+        let currentStep = 1;
+        let facePhotos = [];
+        let faceEmbeddings = [];
+        let voiceClipsRecorded = 0;
+        let voiceRegistrationActive = false;
+        let finalVoiceEmbedding = null;
+        
+        // Camera and registration state
+        let stream = null;
+        let videoElement = null;
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Registration page initialized');
+        });
+
+        // NEW FUNCTIONS FOR USER TYPE HANDLING
+        function toggleUserTypeFields() {
+            const userType = document.getElementById('userType').value;
+            const studentClassGroup = document.getElementById('studentClassGroup');
+            
+            // Hide student class group by default
+            studentClassGroup.style.display = 'none';
+            
+            // Show student class group only if student is selected
+            if (userType === 'student') {
+                studentClassGroup.style.display = 'block';
+            }
+            // For faculty, no additional fields needed since phone is always visible
+        }
+
+        function validateStep1AndContinue() {
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const userType = document.getElementById('userType').value;
+            
+            // Basic validation
+            if (!name) {
+                showStatus('error', 'Please enter your full name');
+                return;
+            }
+            
+            if (!email) {
+                showStatus('error', 'Please enter your email address');
+                return;
+            }
+            
+            if (!phone || phone.length < 10) {
+                showStatus('error', 'Please enter a valid phone number (at least 10 digits)');
+                return;
+            }
+            
+            if (!userType) {
+                showStatus('error', 'Please select your user type (Student or Faculty)');
+                return;
+            }
+            
+            // Validate based on user type
+            if (userType === 'student') {
+                const studentClass = document.getElementById('studentClass').value;
+                if (!studentClass) {
+                    showStatus('error', 'Please select your class');
+                    return;
+                }
+            }
+            // For faculty, phone number is already validated above
+            
+            // All validation passed, proceed to face registration
+            startFaceRegistration();
+        }
+
+        async function startFaceRegistration() {
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            
+            if (!name || !email) {
+                showStatus('error', 'Please fill in both name and email');
+                return;
+            }
+            
+            // Check if email already exists
+            try {
+                const response = await fetch('/api/register/check-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const result = await response.json();
+                
+                if (!result.available) {
+                    showStatus('error', `Email ${email} is already registered`);
+                    return;
+                }
+            } catch (error) {
+                showStatus('error', 'Failed to check email availability');
+                return;
+            }
+            
+            // Move to step 2 and start camera
+            moveToStep(2);
+            await startCamera();
+        }
+
+        async function startCamera() {
+            try {
+                videoElement = document.getElementById('videoElement');
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                videoElement.srcObject = stream;
+                console.log('📷 Camera started successfully');
+            } catch (error) {
+                console.error('Camera error:', error);
+                showStatus('error', 'Failed to access camera. Please allow camera permissions.');
+            }
+        }
+
+        async function capturePhoto() {
+            if (!videoElement || facePhotos.length >= 3) return;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            // Un-mirror the captured image to match CLI processing (critical fix!)
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoElement, -canvas.width, 0);
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation
+            
+            const photoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            facePhotos.push(photoDataUrl);
+            
+            // Display photo in grid
+            const photoSlot = document.getElementById(`photo${facePhotos.length}`);
+            photoSlot.innerHTML = `<img src="${photoDataUrl}" alt="Photo ${facePhotos.length}">`;
+            photoSlot.classList.add('captured');
+            
+            console.log(`📸 Photo ${facePhotos.length} captured`);
+            
+            // Process face embedding
+            try {
+                const response = await fetch('/api/register/process-face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: photoDataUrl })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    faceEmbeddings.push(result.embedding);
+                    console.log(`✅ Face embedding ${facePhotos.length} generated`);
+                } else {
+                    showStatus('error', `Failed to process photo ${facePhotos.length}: ${result.error}`);
+                    facePhotos.pop(); // Remove the failed photo
+                    photoSlot.innerHTML = `📷 Photo ${facePhotos.length + 1}`;
+                    photoSlot.classList.remove('captured');
+                    return;
+                }
+            } catch (error) {
+                showStatus('error', `Processing error for photo ${facePhotos.length}`);
+                facePhotos.pop();
+                photoSlot.innerHTML = `📷 Photo ${facePhotos.length + 1}`;
+                photoSlot.classList.remove('captured');
+                return;
+            }
+            
+            // Check if all 3 photos are captured
+            if (facePhotos.length === 3) {
+                document.getElementById('captureBtn').style.display = 'none';
+                document.getElementById('continueVoiceBtn').style.display = 'inline-block';
+                showStatus('success', 'All 3 face photos captured successfully!');
+            }
+        }
+
+        function startVoiceRegistration() {
+            moveToStep(3);
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Update the voice prompt with user's actual name
+            const userName = document.getElementById('userName').value.trim();
+            if (userName) {
+                document.getElementById('nameInPrompt').textContent = userName;
+            }
+        }
+
+        async function startCliVoiceRegistration() {
+            try {
+                addLog('🎤 Starting CLI-style voice registration...');
+                addLog('🚀 Initializing 3-clip enrollment system');
+                
+                voiceRegistrationActive = true;
+                document.getElementById('startVoiceBtn').style.display = 'none';
+                document.getElementById('recordClipBtn').style.display = 'inline-block';
+                
+                // Start the CLI voice registration process
+                const response = await fetch('/api/register/voice/start-cli-mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog('✅ CLI voice registration started successfully');
+                    addLog('📝 Ready to record clip 1/3');
+                    showStatus('info', 'Ready to record first voice clip');
+                    updateVoiceProgress(0);
+                } else {
+                    throw new Error(result.error || 'Failed to start voice registration');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Failed to start voice registration: ${error.message}`);
+                showStatus('error', `Failed to start voice registration: ${error.message}`);
+                voiceRegistrationActive = false;
+                document.getElementById('startVoiceBtn').style.display = 'inline-block';
+                document.getElementById('recordClipBtn').style.display = 'none';
+            }
+        }
+
+        async function recordNextClip() {
+            if (!voiceRegistrationActive) return;
+            
+            try {
+                // Update UI to show recording state
+                const currentClipNum = voiceClipsRecorded + 1;
+                const clipSlot = document.getElementById(`clip${currentClipNum}`);
+                
+                clipSlot.classList.add('recording');
+                clipSlot.querySelector('div:last-child').textContent = 'Recording...';
+                
+                addLog(`🎤 Recording clip ${currentClipNum}/3...`);
+                addLog('🔴 RECORDING NOW');
+                
+                document.getElementById('recordClipBtn').disabled = true;
+                document.getElementById('recordClipBtn').innerHTML = '<span class="loading"></span> Recording...';
+                
+                // Call the backend to record and process the clip
+                const response = await fetch('/api/register/voice/record-clip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Clip recorded successfully
+                    clipSlot.classList.remove('recording');
+                    clipSlot.classList.add('completed');
+                    clipSlot.querySelector('div:last-child').textContent = 'Complete ✅';
+                    
+                    voiceClipsRecorded++;
+                    
+                    addLog('✅ Recording complete');
+                    addLog('🔄 Processing audio with VAD...');
+                    addLog('✅ VAD: Found 1 speech segment');
+                    addLog('🎤 Speech: 5.0s');
+                    addLog('🧠 Generating voice embedding...');
+                    addLog('✅ Embedding ready');
+                    addLog(`✅ Clip ${currentClipNum} OK`);
+                    
+                    updateVoiceProgress((voiceClipsRecorded / 3) * 100);
+                    
+                    if (result.all_complete) {
+                        // All 3 clips done!
+                        finalVoiceEmbedding = result.final_embedding;
+                        
+                        addLog('🎉 All 3 clips recorded!');
+                        addLog('🔄 Creating voice profile...');
+                        addLog('✅ Voice profile created');
+                        addLog(`🎯 Final embedding shape: (${result.final_embedding.length},)`);
+                        
+                        showStatus('success', 'Voice registration complete! All 3 clips processed successfully.');
+                        
+                        document.getElementById('recordClipBtn').style.display = 'none';
+                        document.getElementById('completeBtn').style.display = 'inline-block';
+                        
+                        voiceRegistrationActive = false;
+                    } else {
+                        // Ready for next clip
+                        const nextClip = voiceClipsRecorded + 1;
+                        addLog(`📝 Ready to record clip ${nextClip}/3`);
+                        showStatus('info', `Clip ${currentClipNum} completed. Ready for clip ${nextClip}.`);
+                        
+                        document.getElementById('recordClipBtn').disabled = false;
+                        document.getElementById('recordClipBtn').innerHTML = `🔴 Record Clip ${nextClip}`;
+                    }
+                } else {
+                    throw new Error(result.error || 'Recording failed');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Recording failed: ${error.message}`);
+                showStatus('error', `Recording failed: ${error.message}`);
+                
+                // Reset clip slot
+                const currentClipNum = voiceClipsRecorded + 1;
+                const clipSlot = document.getElementById(`clip${currentClipNum}`);
+                clipSlot.classList.remove('recording');
+                clipSlot.querySelector('div:last-child').textContent = 'Error ❌';
+                
+                // Reset button
+                document.getElementById('recordClipBtn').disabled = false;
+                document.getElementById('recordClipBtn').innerHTML = `🔴 Retry Clip ${currentClipNum}`;
+            }
+        }
+
+        async function completeRegistration() {
+            if (!finalVoiceEmbedding) {
+                showStatus('error', 'Voice registration not complete');
+                return;
+            }
+            
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const userType = document.getElementById('userType').value;
+            
+            // Collect additional user data based on type
+            let additionalData = { 
+                userType: userType,
+                phone: phone  // Phone is now always included
+            };
+            
+            if (userType === 'student') {
+                additionalData.studentClass = document.getElementById('studentClass').value;
+            }
+            
+            try {
+                showStatus('info', 'Saving registration data...');
+                
+                const response = await fetch('/api/register/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        faceEmbeddings: faceEmbeddings,
+                        voiceEmbedding: finalVoiceEmbedding,
+                        faceImages: facePhotos,
+                        userType: userType,
+                        studentClass: additionalData.studentClass || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog('✅ Registration saved to database successfully');
+                    addLog(`🆔 User ID: ${result.userId}`);
+                    showCompleteStep();
+                } else {
+                    throw new Error(result.error || 'Registration save failed');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Registration save error: ${error.message}`);
+                showStatus('error', `Failed to save registration: ${error.message}`);
+            }
+        }
+
+        function moveToStep(stepNumber) {
+            // Update step classes
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById(`step${i}`);
+                const progress = document.getElementById(`progress${i}`);
+                
+                if (i < stepNumber) {
+                    step.className = 'step completed';
+                    progress.className = 'progress-step completed';
+                } else if (i === stepNumber) {
+                    step.className = 'step active';
+                    progress.className = 'progress-step active';
+                } else {
+                    step.className = 'step';
+                    progress.className = 'progress-step';
+                }
+            }
+            currentStep = stepNumber;
+        }
+
+        function goBackToStep(stepNumber) {
+            // Stop camera if going back from face registration
+            if (currentStep === 2 && stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Reset voice registration state if going back from voice step
+            if (currentStep === 3) {
+                voiceRegistrationActive = false;
+                voiceClipsRecorded = 0;
+                finalVoiceEmbedding = null;
+                
+                // Reset voice UI elements
+                document.getElementById('startVoiceBtn').style.display = 'inline-block';
+                document.getElementById('recordClipBtn').style.display = 'none';
+                document.getElementById('completeBtn').style.display = 'none';
+                document.getElementById('voiceProgress').style.width = '0%';
+                document.getElementById('voiceStatus').innerHTML = '';
+                
+                // Reset clip slots
+                for (let i = 1; i <= 3; i++) {
+                    const clipSlot = document.getElementById(`clip${i}`);
+                    clipSlot.className = 'clip-slot';
+                    clipSlot.querySelector('div:last-child').textContent = 'Waiting...';
+                }
+            }
+            
+            // If going back to face registration and photos exist, restart camera
+            if (stepNumber === 2 && facePhotos.length > 0) {
+                setTimeout(startCamera, 100);
+            }
+            
+            moveToStep(stepNumber);
+        }
+
+        function showCompleteStep() {
+            // Hide all steps and show complete
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`step${i}`).style.display = 'none';
+            }
+            document.getElementById('stepComplete').style.display = 'block';
+        }
+
+        function addLog(message) {
+            // Log container removed - just console log for debugging
+            console.log(`[Voice Registration] ${message}`);
+        }
+
+        function updateVoiceProgress(percentage) {
+            document.getElementById('voiceProgress').style.width = `${percentage}%`;
+        }
+
+        function showStatus(type, message) {
+            const statusContainer = document.getElementById('voiceStatus');
+            statusContainer.innerHTML = `
+                <div class="status-message status-${type}">
+                    ${message}
+                </div>
+            `;
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusContainer.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        // ===== VALIDATION FUNCTIONS =====
+        
+        // Simple validation and proceed function - NO API CALLS
+        function validateAndProceed() {
+            console.log('🔍 Starting step 1 validation...');
+            
+            // Hide any previous validation messages
+            hideValidationSummary();
+            
+            // Basic client-side validation only
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const userType = document.getElementById('userType').value;
+            const studentClass = document.getElementById('studentClass').value;
+            
+            let isValid = true;
+            let errors = [];
+            
+            // Simple validation
+            if (name.length < 2) {
+                errors.push('Name must be at least 2 characters');
+                isValid = false;
+            }
+            
+            if (!email.includes('@')) {
+                errors.push('Please enter a valid email address');
+                isValid = false;
+            }
+            
+            if (phone.length < 10) {
+                errors.push('Phone number must be at least 10 digits');
+                isValid = false;
+            }
+            
+            if (!userType) {
+                errors.push('Please select a user type');
+                isValid = false;
+            }
+            
+            if (userType === 'student' && !studentClass) {
+                errors.push('Please select your class');
+                isValid = false;
+            }
+            
+            if (isValid) {
+                console.log('✅ Step 1 validation passed');
+                
+                // Update progress indicator
+                document.getElementById('progress1').classList.add('valid');
+                
+                // Proceed to next step
+                moveToStep(2);
+                startCamera();
+            } else {
+                console.log('❌ Step 1 validation failed:', errors);
+                showValidationSummary(errors);
+                
+                // Mark progress as invalid
+                document.getElementById('progress1').classList.add('invalid');
+            }
+        }
+        
+        // Show validation summary
+        function showValidationSummary(errors) {
+            const summary = document.getElementById('validationSummary');
+            const errorList = document.getElementById('validationList');
+            
+            // Clear existing errors
+            errorList.innerHTML = '';
+            
+            // Add new errors
+            errors.forEach(error => {
+                const li = document.createElement('li');
+                li.textContent = error;
+                errorList.appendChild(li);
+            });
+            
+            // Show summary
+            summary.classList.add('show');
+            
+            // Scroll to top of form
+            summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Hide validation summary
+        function hideValidationSummary() {
+            const summary = document.getElementById('validationSummary');
+            summary.classList.remove('show');
+        }
+        
+        // Enhanced user type toggle with validation
+        function toggleUserTypeFields() {
+            const userType = document.getElementById('userType').value;
+            const studentClassGroup = document.getElementById('studentClassGroup');
+            const studentClassSelect = document.getElementById('studentClass');
+            
+            if (userType === 'student') {
+                studentClassGroup.style.display = 'block';
+                studentClassSelect.required = true;
+            } else {
+                studentClassGroup.style.display = 'none';
+                studentClassSelect.required = false;
+                studentClassSelect.value = ''; // Clear selection
+            }
+            
+            // Update step validation state
+            updateStepValidationState();
+        }
+        
+        // Update step validation state
+        function updateStepValidationState() {
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const userType = document.getElementById('userType').value;
+            const studentClass = document.getElementById('studentClass').value;
+            
+            // Basic validation
+            let isValid = name.length >= 2 && 
+                         email.includes('@') && 
+                         phone.length >= 10 && 
+                         userType !== '';
+            
+            // Additional student class validation
+            if (userType === 'student') {
+                isValid = isValid && studentClass !== '';
+            }
+            
+            // Update button state
+            const nextBtn = document.getElementById('step1NextBtn');
+            nextBtn.disabled = !isValid;
+            
+            if (isValid) {
+                nextBtn.style.opacity = '1';
+            } else {
+                nextBtn.style.opacity = '0.6';
+            }
+        }
+        
+        // Add real-time validation listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Setting up real-time validation...');
+            
+            // Add input listeners for real-time feedback
+            const fields = ['userName', 'userEmail', 'userPhone', 'userType', 'studentClass'];
+            
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', updateStepValidationState);
+                    field.addEventListener('change', updateStepValidationState);
+                }
+            });
+            
+            // Initial state update
+            updateStepValidationState();
+            
+            console.log('✅ Real-time validation setup complete');
+        });
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Unified requirements for CLI + Flask
+opencv-python
+numpy
+pymongo
+python-dotenv
+rich
+typer[all]
+pydantic>=2.0
+pydantic-settings
+insightface
+onnxruntime
+requests
+torch
+torchaudio
+sounddevice
+pydub
+pytz
+scikit-learn
+speechbrain
+
+# Versions pinned per previous Flask file
+Flask==2.3.3
+Pillow==10.1.0
+soundfile==0.12.1
+librosa==0.10.1

@@ -10,6 +10,13 @@ let faceData = { images: [], embeddings: [], count: 0 };
 let voiceData = { clips: [], embedding: null, count: 0 };
 let videoStream = null;
 let isCapturingFaces = false;
+
+// Remove any Skip Voice button defensively if present in DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const byId = document.getElementById('skipVoiceBtn');
+  if (byId) byId.remove();
+  document.querySelectorAll('.btn-voice-skip').forEach(el => el.remove());
+});
 // Removed client-side audio variables (mediaRecorder, audioChunks, isRecordingVoice)
 
 // Main registration workflow (following register.py logic)
@@ -205,33 +212,46 @@ async function startAutomatedVoiceRecording() {
 
 // SERVER MODE: Server-side recording (like CLI register.py)
 async function startServerVoiceRecording() {
-    showStatus('voiceStatus', '🎤 Backend microphone: Starting voice enrollment...', 'info');
-    
-    // Record 3 clips using server-side recording
-    for (let i = 0; i < 3; i++) {
-        const clipNumber = i + 1;
-        
-        showStatus('voiceStatus', `🎤 Backend recording ${clipNumber}/3 - Say: "Hello, my name is ${userData.name}"`, 'info');
-        await sleep(2000); // Give user time to prepare (like CLI)
-        
-        const success = await recordServerVoiceClip(clipNumber);
-        if (!success) {
-            showStatus('voiceStatus', `❌ Server recording ${clipNumber} failed. Retrying...`, 'error');
-            i--; // Retry this recording
-            await sleep(2000);
-            continue;
+    try {
+        showStatus('voiceStatus', '🎤 Backend microphone: Starting voice enrollment...', 'info');
+        // Use single-shot server endpoint that records 3 clips and saves backups like CLI
+        const resp = await fetch('/api/register/voice/three-times', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: userData.name, email: userData.email, duration: 7.0 })
+        });
+        const result = await resp.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Voice recording failed');
         }
-        
-        await sleep(1000);
+        // Store embedding and backup paths
+        voiceData.embedding = result.embedding;
+        voiceData.count = result.clips_recorded || 3;
+        voiceData.voiceBackupPaths = result.voice_backup_paths || [];
+        voiceData.voiceAudioPath = result.voice_audio_path || null;
+        voiceData.backupUserId = result.backup_user_id || null;
+
+        // Mark UI steps as successful
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById(`voice${i}`);
+            if (el) {
+                el.classList.add('success');
+                el.innerHTML = `<div class="icon">✅</div><div class="title">Recording ${i}</div>`;
+            }
+        }
+
+        showStatus('voiceStatus', '✅ Voice enrollment complete', 'success');
+        // Complete registration with server-recorded voice data
+        await completeRegistration();
+    } catch (e) {
+        console.error('Server voice three-times error:', e);
+        showStatus('voiceStatus', `❌ Voice recording error: ${e.message}`, 'error');
     }
-    
-    // Complete registration with server-recorded voice data
-    await completeRegistration();
 }
 
 // Client-side recording removed - Using only backend microphone (CLI mode)
 
-// Record single voice clip using server-side recording
+// Record single voice clip using server-side recording (LEGACY REMOVED: using only /api/register/voice/three-times)
 async function recordServerVoiceClip(clipNumber) {
     try {
         // Start server recording
@@ -319,7 +339,11 @@ async function completeRegistration() {
             email: userData.email,
             faceEmbeddings: faceData.embeddings,
             voiceEmbedding: voiceData.embedding,
-            faceImages: faceData.images
+            faceImages: faceData.images,
+            // pass backup info so server can persist paths in DB
+            voiceBackupPaths: voiceData.voiceBackupPaths,
+            voiceAudioPath: voiceData.voiceAudioPath,
+            backupUserId: voiceData.backupUserId
         };
         
         console.log('Submitting registration (register.py style):', {

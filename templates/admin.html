@@ -946,6 +946,7 @@
                             <th>Email</th>
                             <th>Photos</th>
                             <th>Voice</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -990,11 +991,12 @@
                             <th>Login</th>
                             <th>Logout</th>
                             <th>Duration</th>
+                            <th>Day Label</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="todayTableBody">
-                        <tr><td colspan="6" class="loading">Loading attendance...</td></tr>
+                        <tr><td colspan="7" class="loading">Loading attendance...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1057,11 +1059,12 @@
                             <th>Login</th>
                             <th>Logout</th>
                             <th>Duration</th>
+                            <th>Day Label</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="logsTableBody">
-                        <tr><td colspan="6" class="empty">Select a date to view logs</td></tr>
+                        <tr><td colspan="7" class="empty">Select a date to view logs</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1253,6 +1256,11 @@
                             ${user.voice_embedding ? 'Yes' : 'No'}
                         </span>
                     </td>
+                    <td>
+                        <button onclick="deleteUser('${user.user_id}', '${user.name.replace(/'/g, "\'")}')" class="btn-secondary" style="padding:6px 10px; border-color:#dc2626; color:#dc2626;">
+                            🗑 Delete
+                        </button>
+                    </td>
                 </tr>
             `).join('');
 
@@ -1264,6 +1272,26 @@
             const q = document.getElementById('userSearchInput').value.trim().toLowerCase();
             const filtered = q ? (allUsersCache || []).filter(u => matchUser(u, q)) : (allUsersCache || []);
             displayUsers(filtered);
+        }
+
+        async function deleteUser(userId, name) {
+            if (!userId) return;
+            if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(`/api/admin/user/${userId}`, { method: 'DELETE' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.success) {
+                    // Remove from cache and refresh table
+                    allUsersCache = (allUsersCache || []).filter(u => u.user_id !== userId);
+                    displayUsers(allUsersCache);
+                    alert('User deleted successfully');
+                } else {
+                    alert(data.error || 'Failed to delete user');
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+                alert('Error deleting user');
+            }
         }
 
         function clearUserSearch() {
@@ -1290,6 +1318,15 @@
             }
         }
 
+        function normalizeStatus(status) {
+            if (status === undefined || status === null) return '';
+            const s = String(status).trim();
+            if (/^pst$/i.test(s)) return 'Present';
+            if (/^prs$/i.test(s)) return 'Present';
+            if (/^abs$/i.test(s)) return 'Absent';
+            return s;
+        }
+
         function displayTodayAttendance(data) {
             const tbody = document.getElementById('todayTableBody');
             
@@ -1300,7 +1337,7 @@
             
             // Display attendance data
             if (!data.attendance || data.attendance.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty">No attendance records for today</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="empty">No attendance records for today</td></tr>';
                 return;
             }
 
@@ -1311,6 +1348,7 @@
                     <td>${record.login || '—'}</td>
                     <td>${record.logout || '—'}</td>
                     <td>${record.duration || '—'}</td>
+                    <td>${record.day_label || '—'}</td>
                     <td>
                         <span class="status-badge ${(record.status.includes('Present') || record.status.includes('Pst')) ? 'status-present' : 'status-absent'}">
                             ${record.status}
@@ -1329,7 +1367,7 @@
 
             try {
                 document.getElementById('logsTableBody').innerHTML = 
-                    '<tr><td colspan="6" class="loading">Loading logs...</td></tr>';
+                    '<tr><td colspan="7" class="loading">Loading logs...</td></tr>';
 
                 const response = await fetch(`/api/admin/logs?date=${date}`);
                 if (response.ok) {
@@ -1806,6 +1844,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             setTodayDates();
         });
+    function displayLogs(logs, date) {
+            const tbody = document.getElementById('logsTableBody');
+            if (!Array.isArray(logs) || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty">No logs for ' + (date || '') + '</td></tr>';
+                document.getElementById('logsCount').textContent = '0 records';
+                return;
+            }
+            document.getElementById('logsCount').textContent = logs.length + ' records';
+            tbody.innerHTML = logs.map(record => `
+                <tr>
+                    <td><strong>${record.name}</strong></td>
+                    <td>${record.email}</td>
+                    <td>${record.login || '—'}</td>
+                    <td>${record.logout || '—'}</td>
+                    <td>${record.duration || '—'}</td>
+                    <td>${record.day_label || '—'}</td>
+                    <td>
+                        <span class="status-badge ${(record.status && record.status.includes('Present')) ? 'status-present' : 'status-absent'}">
+                            ${record.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
     </script>
 </body>
 </html>

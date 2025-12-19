@@ -132,6 +132,7 @@
         <div class="profile-item"><strong>Login</strong><span id="dLogin">—</span></div>
         <div class="profile-item"><strong>Logout</strong><span id="dLogout">—</span></div>
         <div class="profile-item"><strong>Duration</strong><span id="dDuration">—</span></div>
+        <div class="profile-item"><strong>Day Label</strong><span id="dDayLabel">—</span></div>
       </div>
     </section>
   </main>
@@ -243,6 +244,7 @@
       document.getElementById('dLogin').textContent = d.login || '—';
       document.getElementById('dLogout').textContent = d.logout || '—';
       document.getElementById('dDuration').textContent = d.duration || '—';
+      document.getElementById('dDayLabel').textContent = (d.day_label || '—');
       const badge = document.getElementById('dayStatus');
       const raw = (d.status || '').toString().toLowerCase();
       let display = '—';

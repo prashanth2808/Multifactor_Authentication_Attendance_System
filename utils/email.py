@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-def send_attendance_email(name, email, action, timestamp=None, checkin_time=None, checkout_time=None, total_hours=None, total_minutes=None, duration_min=None, login_time=None, logout_time=None):
+def send_attendance_email(name, email, action, timestamp=None, checkin_time=None, checkout_time=None, total_hours=None, total_minutes=None, duration_min=None, login_time=None, logout_time=None, day_label=None):
     """
     Sends beautiful email with attendance details
     For DAILY_SUMMARY: shows complete attendance record (check-in, check-out, total hours)
@@ -25,20 +25,26 @@ def send_attendance_email(name, email, action, timestamp=None, checkin_time=None
             message = "Your attendance for today has been recorded successfully."
             
             # Format total time display
-            if total_hours > 0 and total_minutes > 0:
-                total_time_str = f"{total_hours}h {total_minutes}m"
-            elif total_hours > 0:
-                total_time_str = f"{total_hours}h"
+            if total_hours is not None and total_minutes is not None:
+                if total_hours > 0 and total_minutes > 0:
+                    total_time_str = f"{total_hours}h {total_minutes}m"
+                elif total_hours > 0:
+                    total_time_str = f"{total_hours}h"
+                else:
+                    total_time_str = f"{total_minutes}m"
             else:
-                total_time_str = f"{total_minutes}m"
+                total_time_str = "—"
+
+            status_suffix = f" - {day_label}" if day_label else ""
+            status_text = f"Present{status_suffix}"
             
             details_html = f"""
                 <div style="background: #f0f9ff; padding: 25px; border-radius: 12px; border-left: 5px solid #10b981; margin: 20px 0;">
-                    <p style="margin: 8px 0; font-size: 18px;"><strong>Check-in:</strong> <span style="color: #059669;">{checkin_time}</span></p>
-                    <p style="margin: 8px 0; font-size: 18px;"><strong>Check-out:</strong> <span style="color: #dc2626;">{checkout_time}</span></p>
+                    <p style="margin: 8px 0; font-size: 18px;"><strong>Check-in:</strong> <span style="color: #059669;">{checkin_time or '—'}</span></p>
+                    <p style="margin: 8px 0; font-size: 18px;"><strong>Check-out:</strong> <span style="color: #dc2626;">{checkout_time or '—'}</span></p>
                     <p style="margin: 8px 0; font-size: 18px;"><strong>Total Hours:</strong> <span style="color: #1e40af; font-weight: bold;">{total_time_str}</span></p>
                 </div>
-                <p style="margin: 15px 0; color: #059669; font-weight: 600; font-size: 16px;">✅ Status: Present</p>
+                <p style="margin: 15px 0; color: #059669; font-weight: 600; font-size: 16px;">✅ Status: {status_text}</p>
             """
         elif action == "ABSENT_AUTO":
             subject = "⚠️ Attendance Update — Auto Absent"

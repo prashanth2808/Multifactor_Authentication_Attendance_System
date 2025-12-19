@@ -15,7 +15,10 @@ console = Console()
 
 def register(
     name: str = typer.Option(..., "--name", "-n", help="Full name of the user"),
-    email: str = typer.Option(..., "--email", "-e", help="Email address")
+    email: str = typer.Option(..., "--email", "-e", help="Email address"),
+    user_type: str = typer.Option(None, "--user-type", help="User type: student or faculty"),
+    student_class: str = typer.Option(None, "--class", help="Student class if user-type=student"),
+    phone: str = typer.Option(None, "--phone", help="Phone number (10+ digits)")
 ):
     """
     Capture 3 face photos + 3 voice clips, generate embeddings, save to MongoDB
@@ -28,53 +31,59 @@ def register(
     # === COLLECT USER TYPE AND ADDITIONAL INFO ===
     console.print("\n[yellow]📋 Collecting additional user information...[/yellow]")
     
-    # Ask for user type
-    user_type = typer.prompt(
-        "Are you a student or faculty member?", 
-        type=typer.Choice(["student", "faculty"]), 
-        default="student"
-    )
-    
-    student_class = None
-    phone = None
-    
+    # Ask for or validate user type
+    import click
+    if user_type is None:
+        user_type = typer.prompt(
+            "Are you a student or faculty member?",
+            type=click.Choice(["student", "faculty"], case_sensitive=False),
+            default="student"
+        )
+    else:
+        user_type = user_type.strip().lower()
+        if user_type not in ("student", "faculty"):
+            console.print("[red]--user-type must be 'student' or 'faculty'[/red]")
+            raise typer.Exit(code=2)
+
+    # Student class (only for students)
     if user_type == "student":
-        console.print("\n[cyan]Select your class:[/cyan]")
-        classes = ["M.Sc in AI", "M.Sc in CS", "M.Sc in BA", "M.Tech in AI", "M.Tech in CS"]
-        for i, cls in enumerate(classes, 1):
-            console.print(f"  {i}. {cls}")
-        
-        while True:
-            try:
-                choice = typer.prompt("Enter choice (1-5)", type=int)
-                if 1 <= choice <= 5:
-                    student_class = classes[choice - 1]
-                    console.print(f"[green]Selected: {student_class}[/green]")
-                    break
-                else:
-                    console.print("[red]Please enter a number between 1-5[/red]")
-            except ValueError:
-                console.print("[red]Please enter a valid number[/red]")
-    
-    # Collect phone number for all users (always required)
-    phone = typer.prompt("Enter your phone number")
-    while len(phone.strip()) < 10:
-        console.print("[red]Phone number must be at least 10 digits[/red]")
+        if not student_class:
+            console.print("\n[cyan]Select your class:[/cyan]")
+            classes = ["M.Sc in AI", "M.Sc in CS", "M.Sc in BA", "M.Tech in AI", "M.Tech in CS"]
+            for i, cls in enumerate(classes, 1):
+                console.print(f"  {i}. {cls}")
+            while True:
+                try:
+                    choice = typer.prompt("Enter choice (1-5)", type=int)
+                    if 1 <= choice <= 5:
+                        student_class = classes[choice - 1]
+                        console.print(f"[green]Selected: {student_class}[/green]")
+                        break
+                    else:
+                        console.print("[red]Please enter a number between 1-5[/red]")
+                except ValueError:
+                    console.print("[red]Please enter a valid number[/red]")
+        else:
+            student_class = student_class.strip()
+    else:
+        student_class = None
+
+    # Phone number (required for all)
+    if not phone:
         phone = typer.prompt("Enter your phone number")
+    phone = phone.strip()
+    while len(phone) < 10 or not phone.isdigit():
+        console.print("[red]Phone number must be at least 10 digits and numeric[/red]")
+        phone = typer.prompt("Enter your phone number").strip()
     console.print(f"[green]Phone number: {phone}[/green]")
-    
-    # Collect additional info based on user type
-    if user_type == "faculty":
-        pass  # Faculty only needs phone number which is already collected
-    
+
     console.print(f"\n[green]✅ User Information Collected:[/green]")
     console.print(f"   👤 Name: {name}")
     console.print(f"   📧 Email: {email}")
     console.print(f"   🏢 Type: {user_type.title()}")
     if user_type == "student":
         console.print(f"   🎓 Class: {student_class}")
-    else:
-        console.print(f"   📞 Phone: {phone}")
+    console.print(f"   📞 Phone: {phone}")
     
     # === FACE CAPTURE (BURST MODE) ===
     console.print("\n[yellow]Capturing 3 face photos in burst mode...[/yellow]")

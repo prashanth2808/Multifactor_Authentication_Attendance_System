@@ -1,0 +1,35 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments & env files
+venv/
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# MongoDB local data (DO NOT containerize)
+data/
+dump/
+
+# Runtime-generated biometric data
+captured_images/
+voice_backups/
+
+# Cache folders
+.cache/
+torch_cache/

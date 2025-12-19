@@ -92,7 +92,7 @@ class RegistrationService:
                 "voice_embedding": voice_result["embedding"],
                 "photo_count": len(face_result["embeddings"]),
                 "voice_clips": voice_result["clips_used"],
-                "registered_at": datetime.utcnow(),
+                "registered_at": datetime.now(),
                 "photo_folder": user_folder,
                 "registration_source": source
             }
@@ -310,8 +310,9 @@ class RegistrationService:
             
             # Use UPGRADED ECAPA-TDNN system with backup support
             voice_embedding, best_audio_clip, audio_backup_paths = record_and_embed_three_times(
-                duration_per_clip=7.0, 
-                user_id=temp_user_id
+                duration_per_clip=7.0,
+                user_id=temp_user_id,
+                user_name=name
             )
             
             if voice_embedding is None:

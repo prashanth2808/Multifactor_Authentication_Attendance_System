@@ -57,6 +57,18 @@
             margin: 0;
         }
 
+        /* Clock */
+        .clock {
+            margin-right: 12px;
+            color: #334155;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+
         /* Admin Button */
         .admin-button {
             position: relative;
@@ -620,6 +632,7 @@
     <header class="header">
         <img src="/static/images/reva logo.png" alt="Reva Logo" class="logo" onclick="window.location.reload()">
         <h1>Multifactor Authentication Attendance System</h1>
+        <div class="clock" id="localClock">--:--:--</div>
         <button class="admin-button" onclick="showAdminLogin()">
             👤 Admin
         </button>
@@ -687,9 +700,6 @@
                             <button class="btn btn-voice-verify" id="verifyVoiceBtn">
                                 Verify Voice
                             </button>
-                            <button class="btn btn-voice-skip" id="skipVoiceBtn">
-                                Skip Voice
-                            </button>
                         </div>
                         <div id="voiceRecordingStatus" style="display:none; margin-top: 8px; color: #059669; font-weight: 500;">
                             Recording voice... Speak clearly for 5 seconds
@@ -754,8 +764,27 @@
         let sessionActive = false;
         let frameProcessingInterval = null;
 
+        function startLocalClock() {
+            const el = document.getElementById('localClock');
+            function pad(n){return n.toString().padStart(2,'0');}
+            function tick(){
+                const d = new Date();
+                const hh = d.getHours();
+                const h12 = ((hh + 11) % 12) + 1;
+                const mm = pad(d.getMinutes());
+                const ss = pad(d.getSeconds());
+                const ampm = hh >= 12 ? 'PM' : 'AM';
+                const dateStr = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+                el.textContent = `${h12}:${mm}:${ss} ${ampm} • ${dateStr}`;
+            }
+            tick();
+            setInterval(tick, 1000);
+        }
+
         // Initialize system
         document.addEventListener('DOMContentLoaded', function() {
+            // Start local clock updater
+            startLocalClock();
             initializeSystem();
             setupEventListeners();
             startCameraStream();

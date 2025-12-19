@@ -547,6 +547,147 @@ def get_voice_result():
     
     return jsonify(result)
 
+# Add this import at the top of your file (with other imports), if not already there
+from datetime import datetime
+
+# ==============================================================================
+
+# New: CLI-equivalent server-side voice registration (records 3 clips with server mic)
+@app.route('/api/register/voice/three-times', methods=['POST'])
+def api_register_voice_three_times():
+    try:
+        data = request.get_json() or {}
+        name = data.get('name', 'User')
+        email = data.get('email', 'unknown@domain.com')
+        duration = float(data.get('duration', 7.0))
+
+        # Deterministic temp id for backup folder naming
+        import hashlib
+        temp_user_id = hashlib.md5((email or name).encode()).hexdigest()[:8]
+
+        from services.voice_embedding import record_and_embed_three_times
+        import soundfile as sf
+        import numpy as np
+
+        # Perform recording + VAD + ECAPA + backups
+        embedding, best_audio_clip, backup_paths = record_and_embed_three_times(
+            duration_per_clip=duration,
+            user_id=temp_user_id,
+            user_name=name
+        )
+        if embedding is None:
+            return jsonify({'success': False, 'error': 'Voice recording failed'}), 500
+
+        # Save legacy best clip under captured_voices, like CLI, using absolute project path
+        from pathlib import Path
+        base_dir = Path(__file__).resolve().parent
+        captured_dir = base_dir / 'captured_voices'
+        captured_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        safe_name = ''.join(c if c.isalnum() or c in ' _-' else '_' for c in name)
+        voice_filename = f"{safe_name}_{timestamp}_voice.wav"
+        voice_audio_path = str(captured_dir / voice_filename)
+        sf.write(voice_audio_path, best_audio_clip, samplerate=16000)
+
+        # NEW (Flask-only): Move/copy each recorded clip into captured_voices as well
+        # This does not modify recording, VAD, or embedding logic. It only stores files in captured_voices.
+        captured_clip_paths = []
+        try:
+            import shutil
+            for idx, src in enumerate(backup_paths or [], start=1):
+                try:
+                    # Build target filename in captured_voices
+                    clip_filename = f"{safe_name}_clip_{idx}_{timestamp}.wav"
+                    dst_path = str(captured_dir / clip_filename)
+                    # Copy the generated backup wav into captured_voices
+                    shutil.copy2(src, dst_path)
+                    captured_clip_paths.append(dst_path)
+                    # Optionally remove the original so files exist only in captured_voices
+                    try:
+                        os.remove(src)
+                    except Exception:
+                        pass
+                except Exception as e:
+                    print(f"Failed to copy voice clip {idx} to captured_voices: {e}")
+        except Exception as e:
+            print(f"Voice clip migrate error: {e}")
+
+        return jsonify({
+            'success': True,
+            'embedding': embedding.tolist(),
+            'clips_recorded': 3,
+            'voice_backup_paths': backup_paths,
+            'voice_audio_path': voice_audio_path,
+            'backup_user_id': temp_user_id,
+            'embedding_shape': list(np.array(embedding).shape),
+            'embedding_norm': float(np.linalg.norm(np.array(embedding)))
+        })
+    except Exception as e:
+        print(f"Voice three-times error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Registration submit endpoint (saves to Mongo via unified service)
+@app.route('/api/register/submit', methods=['POST'])
+def api_register_submit():
+    """Unified registration submit endpoint (includes phone/user_type and voice backups)."""
+    try:
+        payload = request.get_json() or {}
+        name = (payload.get('name') or '').strip()
+        email = (payload.get('email') or '').strip().lower()
+        phone = (payload.get('phone') or '').strip()
+        user_type = payload.get('userType') or payload.get('user_type')
+        student_class = payload.get('studentClass') or payload.get('student_class')
+
+        face_embeddings = payload.get('faceEmbeddings') or []
+        face_images = payload.get('faceImages') or []
+        voice_embedding = payload.get('voiceEmbedding')
+
+        # Optional paths from voice step
+        voice_backup_paths = payload.get('voiceBackupPaths')
+        voice_audio_path = payload.get('voiceAudioPath')
+        backup_user_id = payload.get('backupUserId')
+
+        face_data = {
+            'faceEmbeddings': face_embeddings,
+            'faceImages': face_images,
+        }
+        voice_data = {
+            'voiceEmbedding': voice_embedding,
+        }
+
+        # Build additional data including phone and user type
+        additional_data = {}
+        if phone:
+            additional_data['phone'] = phone
+        if user_type:
+            additional_data['user_type'] = user_type
+        if student_class:
+            additional_data['student_class'] = student_class
+        if voice_backup_paths:
+            additional_data['voice_backup_paths'] = voice_backup_paths
+        if voice_audio_path:
+            additional_data['voice_audio_path'] = voice_audio_path
+        if backup_user_id:
+            additional_data['backup_user_id'] = backup_user_id
+
+        result = registration_service.register_user(
+            name=name,
+            email=email,
+            face_data=face_data,
+            voice_data=voice_data,
+            source='flask',
+            additional_data=additional_data if additional_data else None
+        )
+        if result.get('success'):
+            return jsonify({'success': True, 'userId': result.get('user_id'), 'message': 'Registered successfully'})
+        else:
+            return jsonify({'success': False, 'error': result.get('error', 'Registration failed')}), 400
+    except Exception as e:
+        print(f"Register submit error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==============================================================================
+
 @app.route('/api/mark-session', methods=['POST'])
 def mark_session_api():
     """Session marking - exact same logic as session.py"""
@@ -559,8 +700,8 @@ def mark_session_api():
         # Call your existing session marking function
         action, message = mark_session(user["user_id"], user["name"], user["email"])
         
-        # Get current timestamp (matches session.py _print_time)
-        timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S • %d %b %Y UTC")
+        # Get current timestamp in local time (clean format, no UTC suffix)
+        timestamp = datetime.now().strftime("%H:%M:%S • %d %b %Y")
         
         # Session complete (matches session.py rich display)
         print(f"🎯 SESSION COMPLETE: {action}")
@@ -589,6 +730,7 @@ def mark_session_api():
         traceback.print_exc()
         return jsonify({'error': f'Session marking error: {str(e)}'}), 500
 
+
 @app.route('/api/skip-voice', methods=['POST'])
 def skip_voice():
     """Skip voice verification - matches session.py 'N' choice"""
@@ -601,7 +743,8 @@ def skip_voice():
         # Voice skipped - proceed to session marking (matches session.py)
         action, message = mark_session(user["user_id"], user["name"], user["email"])
         
-        timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S • %d %b %Y UTC")
+        # Use local time consistently (same as mark-session)
+        timestamp = datetime.now().strftime("%H:%M:%S • %d %b %Y")
         
         print(f"🎯 SESSION COMPLETE: {action} (Voice skipped)")
         print(f"📋 {message}")
@@ -625,6 +768,7 @@ def skip_voice():
         })
         
     except Exception as e:
+        print(f"❌ Skip voice error: {e}")
         return jsonify({'error': f'Skip voice error: {str(e)}'}), 500
 
 @app.route('/api/restart-session', methods=['POST'])
@@ -787,7 +931,8 @@ def api_admin_user_attendance_day(user_id):
                 'status': clean_rich_formatting(str(rec.get('status', ''))),
                 'login': rec.get('login', '—'),
                 'logout': rec.get('logout', '—'),
-                'duration': rec.get('duration', '—')
+                'duration': rec.get('duration', '—'),
+                'day_label': rec.get('day_label') or '—'
             })
         else:
             today_str = datetime.now().strftime('%Y-%m-%d')
@@ -850,6 +995,20 @@ def media_user_photo(user_id, index):
     except Exception as e:
         print(f"❌ Serve photo error: {e}")
         return jsonify({'error': f'Failed to load photo: {str(e)}'}), 500
+
+@app.route('/api/admin/user/<user_id>', methods=['DELETE'])
+def api_admin_delete_user(user_id):
+    """Delete a user by ID (DB only)."""
+    try:
+        from db.user_repo import delete_user_by_id
+        ok = delete_user_by_id(user_id)
+        if ok:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+    except Exception as e:
+        print(f"Delete user error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/users')
 def admin_users():
@@ -918,6 +1077,7 @@ def admin_today():
                     'logout': session["logout"],
                     'duration': session["duration"],
                     'duration_minutes': session.get("duration_minutes"),
+                    'day_label': session.get("day_label") or '—',
                     'status': clean_rich_formatting(session["status"])
                 }
                 
@@ -937,6 +1097,7 @@ def admin_today():
                         'login': '—',
                         'logout': '—',
                         'duration': '—',
+                        'day_label': '—',
                         'status': 'Present'
                     }
                     present_count += 1
@@ -947,6 +1108,7 @@ def admin_today():
                         'login': '—',
                         'logout': '—',
                         'duration': '—',
+                        'day_label': '—',
                         'status': 'Absent'
                     }
                     absent_count += 1
@@ -989,6 +1151,7 @@ def admin_logs():
                 'logout': log["logout"],
                 'duration': log["duration"],
                 'duration_minutes': log.get("duration_minutes"),
+                'day_label': log.get("day_label") or '—',
                 'status': clean_rich_formatting(log["status"])
             }
             formatted_logs.append(formatted_log)
@@ -1044,46 +1207,48 @@ def process_face_registration():
         print(f"❌ Face processing error: {e}")
         return jsonify({'error': f'Face processing failed: {str(e)}'}), 500
 
-@app.route('/api/register/process-voice', methods=['POST'])
-def process_voice_registration():
-    """Process voice clips - NOW SIMPLIFIED TO USE SAME LOGIC AS CLI"""
+# LEGACY REMOVED: /api/register/process-voice (use /api/register/voice/three-times)
+def process_voice_registration_removed():
+    """Process 3 voice clips from web, compute embedding, and save backups like CLI."""
     try:
         data = request.get_json()
         voice_clips = data.get('voiceClips', [])
+        user_name = data.get('name', 'User')
+        user_email = data.get('email', 'unknown@domain.com')
         
         if not voice_clips or len(voice_clips) != 3:
             return jsonify({'error': 'Exactly 3 voice clips required'}), 400
         
         print(f"🌐 Processing {len(voice_clips)} voice clips from Flask frontend...")
         
-        # Use SAME voice processing as CLI by calling unified function
-        # This ensures identical embedding generation logic
-        
-        # Import the SAME function CLI uses
-        from services.voice_embedding import VoiceEncoder, get_embedding_from_wav, apply_vad
+        # SAME voice processing as CLI
+        from services.voice_embedding import get_embedding_from_wav, apply_vad, save_audio_backups
         import numpy as np
         from pydub import AudioSegment
         import io
+        import hashlib
+        import soundfile as sf
         
         embeddings = []
+        cleaned_clips = []  # store cleaned audio for backup saving
         
         for i, audio_data in enumerate(voice_clips):
             try:
                 print(f"🔊 Processing voice clip {i+1}/3...")
                 
-                # Convert base64 to audio (SIMPLIFIED)
+                # Convert base64 to audio
                 if ',' in audio_data:
                     audio_data = audio_data.split(',')[1]
-                
                 audio_bytes = base64.b64decode(audio_data)
                 
-                # Load audio (SIMPLIFIED - focus on WAV)
+                # Load WAV in-memory and resample/mono
                 audio_io = io.BytesIO(audio_bytes)
                 audio = AudioSegment.from_wav(audio_io)
-                
-                # Process audio SAME as CLI
                 audio = audio.set_frame_rate(16000).set_channels(1)
-                audio_np = np.array(audio.get_array_of_samples(), dtype=np.int16)
+                
+                # Convert to numpy int16 then to float32 range [-1,1] for VAD path
+                audio_np_int16 = np.array(audio.get_array_of_samples(), dtype=np.int16)
+                audio_np = (audio_np_int16.astype(np.float32) / 32768.0)
                 
                 # Apply VAD (SAME as CLI)
                 cleaned_audio = apply_vad(audio_np, 16000)
@@ -1097,6 +1262,7 @@ def process_voice_registration():
                 
                 if embedding is not None:
                     embeddings.append(embedding)
+                    cleaned_clips.append(cleaned_audio)
                     print(f"✅ Voice clip {i+1} processed successfully")
                 else:
                     return jsonify({'error': f'Voice embedding failed for clip {i+1}'}), 400
@@ -1111,12 +1277,35 @@ def process_voice_registration():
         
         average_embedding = np.mean(embeddings, axis=0)
         
+        # NEW: Save backups like CLI using a deterministic temp user id
+        temp_user_id = hashlib.md5((user_email or user_name).encode()).hexdigest()[:8]
+        voice_backup_paths = save_audio_backups(cleaned_clips, temp_user_id, user_name=user_name)
+        
+        # Save the single best clip to captured_voices (legacy behavior)
+        if cleaned_clips:
+            best_audio_clip = max(cleaned_clips, key=len)
+            from pathlib import Path
+            base_dir = Path(__file__).resolve().parent
+            captured_dir = base_dir / "captured_voices"
+            captured_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in user_name)
+            voice_filename = f"{safe_name}_{timestamp}_voice.wav"
+            voice_audio_path = str((captured_dir / voice_filename))
+            # best_audio_clip is float32 [-1,1]; write as wav 16kHz
+            sf.write(voice_audio_path, best_audio_clip, samplerate=16000)
+        else:
+            voice_audio_path = None
+        
         print(f"✅ Voice processing complete: {len(embeddings)} clips → {average_embedding.shape}")
         
         return jsonify({
             'success': True,
             'voiceEmbedding': average_embedding.tolist(),
-            'clipsProcessed': len(embeddings)
+            'clipsProcessed': len(embeddings),
+            'voice_backup_paths': voice_backup_paths,
+            'voice_audio_path': voice_audio_path,
+            'backup_user_id': temp_user_id
         })
         
     except Exception as e:
@@ -1207,10 +1396,18 @@ def submit_registration():
             'voiceEmbedding': data.get('voiceEmbedding')
         }
 
+        # Include voice backup paths from the voice step (carbon copy of CLI persistence)
+        voice_backup_paths = data.get('voiceBackupPaths')
+        voice_audio_path = data.get('voiceAudioPath')
+        backup_user_id = data.get('backupUserId')
+
         additional = {k: v for k, v in {
             'user_type': user_type,
             'student_class': student_class,
-            'phone': phone
+            'phone': phone,
+            'voice_backup_paths': voice_backup_paths,
+            'voice_audio_path': voice_audio_path,
+            'backup_user_id': backup_user_id,
         }.items() if v}
 
         result = registration_service.register_user(
@@ -1483,7 +1680,8 @@ def voice_record_and_embed_three_times():
         # Call UPGRADED ECAPA-TDNN function with backup support
         voice_embedding, best_audio_clip, audio_backup_paths = record_and_embed_three_times(
             duration_per_clip=duration_per_clip,
-            user_id=temp_user_id  # ← This triggers .wav backup saving
+            user_id=temp_user_id,
+            user_name=user_name  # ← Pass name so filenames use it
         )
         
         if voice_embedding is not None:
@@ -1563,113 +1761,80 @@ def check_unique_registration():
 
 @app.route('/api/admin/export-csv')
 def export_attendance_csv():
-    """Export attendance data as CSV for specific date range - FIXED VERSION"""
+    """Export attendance data as CSV for a date or inclusive date range.
+    Usage:
+      - /api/admin/export-csv?date=YYYY-MM-DD
+      - /api/admin/export-csv?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    """
     try:
-        # Get date parameters
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date', start_date)
-        
-        if not start_date:
-            # Default to today if no date specified
-            start_date = datetime.now().strftime("%Y-%m-%d")
-            end_date = start_date
-        
+        # Parse query params
+        date_param = request.args.get('date')
+        start_param = request.args.get('start_date')
+        end_param = request.args.get('end_date')
+
+        # Resolve date range
+        from datetime import datetime, timedelta
+        def parse(d):
+            return datetime.strptime(d, '%Y-%m-%d').date()
+
+        if date_param:
+            start_date = end_date = parse(date_param)
+        elif start_param and end_param:
+            start_date = parse(start_param)
+            end_date = parse(end_param)
+        elif start_param and not end_param:
+            start_date = end_date = parse(start_param)
+        else:
+            today = datetime.now().date()
+            start_date = end_date = today
+
+        if end_date < start_date:
+            start_date, end_date = end_date, start_date
+
         print(f"📊 CSV Export requested for {start_date} to {end_date}")
-        
-        # Get attendance data from database
-        from db.session_repo import get_report
-        sessions = get_report(start_date, end_date)
-        
-        if not sessions:
-            print(f"⚠️ No sessions found for {start_date} to {end_date}")
-            # Return empty CSV with headers
-            output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerow([
-                'Date', 'Name', 'Email', 'Login Time', 'Logout Time', 
-                'Duration (minutes)', 'Raw Status', 'Final Status'
-            ])
-            output.seek(0)
-            csv_content = output.getvalue()
-            output.close()
-            
-            filename = f"attendance_{start_date}_empty.csv"
-            return Response(
-                csv_content,
-                mimetype='text/csv',
-                headers={
-                    'Content-Disposition': f'attachment; filename="{filename}"',
-                    'Content-Type': 'text/csv; charset=utf-8'
-                }
-            )
-        
-        # Create CSV content
+
+        # Build CSV
         output = io.StringIO()
         writer = csv.writer(output)
-        
-        # Write CSV headers
-        writer.writerow([
-            'Date', 'Name', 'Email', 'Login Time', 'Logout Time', 
-            'Duration (minutes)', 'Raw Status', 'Final Status'
-        ])
-        
-        # Process each session
-        for session in sessions:
-            try:
-                date = session.get('date', 'unknown')
-                name = session.get('name', 'Unknown User')
-                email = session.get('email', 'unknown@email.com')
-                
-                # Format times
-                login_time = session.get('login_time', '—')
-                logout_time = session.get('logout_time', '—')
-                
-                # Calculate duration
-                duration_minutes = session.get('duration_minutes', 0)
-                
-                # Status processing
-                raw_status = session.get('status', 'unknown')
-                
-                # Determine final status based on your business logic
-                if logout_time == '—' or logout_time is None:
-                    if duration_minutes >= 540:  # 9 hours in minutes
-                        final_status = 'Absent (Auto-logout)'
-                    else:
-                        final_status = 'Present (No logout)'
-                else:
-                    if duration_minutes >= 480:  # 8 hours
-                        final_status = 'Present'
-                    else:
-                        final_status = 'Present (Short day)'
-                
-                # Write row
+        writer.writerow(['Date', 'Name', 'Email', 'Login', 'Logout', 'Duration', 'Day Label', 'Status'])
+
+        # Use existing get_report(date) which returns display-ready fields
+        from db.session_repo import get_report
+
+        current = start_date
+        any_rows = False
+        while current <= end_date:
+            date_str = current.strftime('%Y-%m-%d')
+            rows = get_report(date_str) or []
+            for r in rows:
+                any_rows = True
                 writer.writerow([
-                    date, name, email, login_time, logout_time, 
-                    duration_minutes, raw_status, final_status
+                    date_str,
+                    r.get('name', ''),
+                    r.get('email', ''),
+                    r.get('login', '—'),
+                    r.get('logout', '—'),
+                    r.get('duration', '—'),
+                    r.get('day_label', '—'),
+                    # Clean any Rich tags just in case
+                    re.sub(r'\[.*?\]', '', str(r.get('status', '')))
                 ])
-                
-            except Exception as row_error:
-                print(f"❌ Error processing session row: {row_error}")
-                # Write error row to maintain data integrity
-                writer.writerow([
-                    date, 'ERROR', 'error@processing.com', '—', '—', 
-                    0, 'error', f'Processing Error: {str(row_error)}'
-                ])
-        
-        # Prepare response
+            current += timedelta(days=1)
+
+        if not any_rows:
+            # still return just headers
+            pass
+
         output.seek(0)
         csv_content = output.getvalue()
         output.close()
-        
-        # Create filename with timestamp
+
+        # Filename
         if start_date == end_date:
-            filename = f"attendance_{start_date}.csv"
+            filename = f"attendance_{start_date.isoformat()}.csv"
         else:
-            filename = f"attendance_{start_date}_to_{end_date}.csv"
-        
-        print(f"✅ CSV export successful: {filename}")
-        
-        # Return CSV file with proper headers
+            filename = f"attendance_{start_date.isoformat()}_to_{end_date.isoformat()}.csv"
+
         return Response(
             csv_content,
             mimetype='text/csv',
@@ -1681,7 +1846,7 @@ def export_attendance_csv():
                 'Expires': '0'
             }
         )
-        
+
     except Exception as e:
         print(f"❌ CSV export error: {e}")
         import traceback
@@ -1689,10 +1854,10 @@ def export_attendance_csv():
         return jsonify({'error': f'Export failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    print("🚀 BIOMETRIC KIOSK WEB SYSTEM STARTING...")
-    print("📍 Web Interface: http://localhost:5000")
-    print("📍 Admin Dashboard: http://localhost:5000/admin")
-    print("🔗 Same AI models and logic as CLI session.py")
-    print("✨ Professional Enterprise UI\n")
+    # print("🚀 BIOMETRIC KIOSK WEB SYSTEM STARTING...")
+    # print("📍 Web Interface: http://localhost:5000")
+    # print("📍 Admin Dashboard: http://localhost:5000/admin")
+    # print("🔗 Same AI models and logic as CLI session.py")
+    # print("✨ Professional Enterprise UI\n")
     
     app.run(host='0.0.0.0', port=5000, debug=True)

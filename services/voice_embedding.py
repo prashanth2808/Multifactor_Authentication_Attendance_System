@@ -22,6 +22,7 @@ from rich.console import Console
 import time
 import wave
 import datetime
+from pathlib import Path
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def _load_ecapa_model():
     try:
         console.print("[cyan]Loading ECAPA-TDNN from local files...[/cyan]")
         
-        from speechbrain.inference import SpeakerRecognition
+        from speechbrain.pretrained import SpeakerRecognition
         
         # Use the locally downloaded model
         local_model_path = "pretrained_models/spkrec-ecapa-voxceleb"
@@ -190,42 +191,53 @@ def get_ecapa_embedding(audio_np):
         console.print(f"[red]❌ ECAPA-TDNN embedding failed: {e}[/red]")
         raise e
 
-def save_audio_backups(audio_clips, user_id):
+def save_audio_backups(audio_clips, user_id, user_name: str | None = None):
     """Save 3 audio clips as backup WAV files for future model changes"""
     try:
-        # Create backup directory
-        backup_dir = "voice_backups"
-        if not os.path.exists(backup_dir):
-            os.makedirs(backup_dir)
-            console.print(f"[cyan]📁 Created backup directory: {backup_dir}[/cyan]")
+        # Create backup directory rooted at project folder (absolute path)
+        base_dir = Path(__file__).resolve().parents[1]
+        backup_dir = base_dir / "voice_backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        console.print(f"[cyan]📁 Voice backups base: {backup_dir}[/cyan]")
         
-        # Create user-specific directory
-        user_backup_dir = os.path.join(backup_dir, f"user_{user_id}")
-        if not os.path.exists(user_backup_dir):
-            os.makedirs(user_backup_dir)
+        # Create user-specific directory including name if provided
+        safe_name = None
+        if user_name:
+            safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in user_name).strip().replace(" ", "_")
+        folder_label = f"user_{safe_name}_{user_id}" if safe_name else f"user_{user_id}"
+        user_backup_dir = backup_dir / folder_label
+        user_backup_dir.mkdir(parents=True, exist_ok=True)
         
-        # Generate timestamp
+        # Generate timestamp (not used in filename anymore but kept if needed for future)
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         
         audio_backup_paths = []
         
-        for i, audio_clip in enumerate(audio_clips, 1):
+        for i, audio_clip in enumerate(audio_clips, 1):  # filenames keep user_id only to avoid long names
             # Normalize audio to 16-bit integers
             audio_normalized = (audio_clip * 32767).astype(np.int16)
             
-            # Create filename
-            filename = f"{user_id}_clip_{i}_{timestamp}.wav"
-            filepath = os.path.join(user_backup_dir, filename)
+            # Create readable filename based on user's name (fallback to user_id)
+            if user_name:
+                safe_full = "".join(c if c.isalnum() else "_" for c in user_name).strip("_")
+                # Take up to first 4 letters; if name is short, use full
+                prefix = (safe_full[:4] if len(safe_full) >= 4 else safe_full) or "user"
+                prefix = prefix.lower()
+            else:
+                uid_str = str(user_id) if user_id is not None else "user"
+                prefix = ("".join(ch for ch in uid_str if ch.isalnum())[:4] or "user").lower()
+            filename = f"{prefix}_clip_{i}.wav"
+            filepath = user_backup_dir / filename
             
             # Save as WAV file
-            with wave.open(filepath, 'wb') as wav_file:
+            with wave.open(str(filepath), 'wb') as wav_file:
                 wav_file.setnchannels(1)  # Mono
                 wav_file.setsampwidth(2)  # 16-bit
                 wav_file.setframerate(16000)  # 16kHz
                 wav_file.writeframes(audio_normalized.tobytes())
             
-            audio_backup_paths.append(filepath)
-            console.print(f"[green]💾 Saved backup audio: {filename}[/green]")
+            audio_backup_paths.append(str(filepath))
+            console.print(f"[green]💾 Saved backup audio: {filepath}[/green]")
         
         console.print(f"[bold green]✅ All 3 audio backups saved for user {user_id}[/bold green]")
         return audio_backup_paths
@@ -234,7 +246,7 @@ def save_audio_backups(audio_clips, user_id):
         console.print(f"[red]❌ Failed to save audio backups: {e}[/red]")
         return []
 
-def record_and_embed_three_times(duration_per_clip=7.0, user_id=None):
+def record_and_embed_three_times(duration_per_clip=7.0, user_id=None, user_name: str | None = None):
     """Record 3 voice clips, generate averaged embedding, and save audio backups"""
     console.print("[bold cyan]🎤 ECAPA-TDNN Voice Registration — 3 Clips[/bold cyan]")
     
@@ -289,7 +301,7 @@ def record_and_embed_three_times(duration_per_clip=7.0, user_id=None):
     # Save audio backups if user_id provided
     audio_backup_paths = []
     if user_id:
-        audio_backup_paths = save_audio_backups(audio_clips, user_id)
+        audio_backup_paths = save_audio_backups(audio_clips, user_id, user_name=user_name)
     
     # Return the best audio clip (longest speech duration)
     best_audio_clip = max(audio_clips, key=len) if audio_clips else audio_clips[0]
